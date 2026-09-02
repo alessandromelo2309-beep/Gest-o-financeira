@@ -1,0 +1,13 @@
+{
+  "name": "gestao-financeira",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão Financeira Pessoal",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+    "start": "cd backend && node src/server.js",
+    "dev": "cd backend && node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

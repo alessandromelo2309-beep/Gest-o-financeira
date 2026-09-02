@@ -1,0 +1,7 @@
+node_modules/
+frontend/build/
+backend/database.sqlite
+*.log
+.env
+.DS_Store
+Thumbs.db
