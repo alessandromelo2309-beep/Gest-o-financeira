@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight,
-  AlertTriangle, CheckCircle, Info, Clock, BarChart3, ChevronRight
+  AlertTriangle, CheckCircle, Info, Clock, BarChart3, ChevronRight, Download, FileText
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { apiCall } from '../api';
 import { formatCurrency, formatDate, getCurrentMonth, getMonthName, getMonthNames, getYears } from '../utils';
 import { useTheme } from '../contexts/ThemeContext';
@@ -40,6 +40,14 @@ export default function DashboardPage({ onNewTransaction }) {
     finally { setLoading(false); }
   };
 
+  const handleExportPDF = () => {
+    window.open(`/api/export/pdf?month=${period.month}&year=${period.year}`, '_blank');
+  };
+
+  const handleExportCSV = () => {
+    window.open(`/api/export/csv?month=${period.month}&year=${period.year}`, '_blank');
+  };
+
   if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', color: t.textMuted }}>Carregando...</div>;
   if (!summary) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', color: t.textMuted }}>Erro ao carregar</div>;
 
@@ -53,13 +61,19 @@ export default function DashboardPage({ onNewTransaction }) {
           <h1 style={{ fontSize: '24px', fontWeight: '700', color: t.text, margin: 0, transition: 'color 0.3s' }}>Visão Geral</h1>
           <p style={{ fontSize: '14px', color: t.textMuted, margin: '4px 0 0' }}>{getMonthName(period.month)} de {period.year}</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <select value={period.month} onChange={e => setPeriod({ ...period, month: e.target.value })} style={selectStyle}>
             {getMonthNames().map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
           <select value={period.year} onChange={e => setPeriod({ ...period, year: e.target.value })} style={selectStyle}>
             {getYears().map(y => <option key={y} value={y}>{y}</option>)}
           </select>
+          <button onClick={handleExportPDF} style={{ padding: '8px 12px', background: t.bgCard, border: `1px solid ${t.border}`, borderRadius: '8px', cursor: 'pointer', color: t.textSecondary, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+            <FileText size={14} /> PDF
+          </button>
+          <button onClick={handleExportCSV} style={{ padding: '8px 12px', background: t.bgCard, border: `1px solid ${t.border}`, borderRadius: '8px', cursor: 'pointer', color: t.textSecondary, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+            <Download size={14} /> CSV
+          </button>
         </div>
       </div>
 
@@ -99,6 +113,23 @@ export default function DashboardPage({ onNewTransaction }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {monthlyData.length >= 2 && (
+        <div style={{ backgroundColor: t.bgCard, borderRadius: '12px', padding: '20px', boxShadow: t.shadow, marginBottom: '24px', transition: 'all 0.3s' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '600', color: t.text, margin: '0 0 16px' }}>Evolução - Comparativo Mensal</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={monthlyData.slice().reverse()}>
+              <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: t.chartText }} stroke={t.chartGrid} />
+              <YAxis tick={{ fontSize: 12, fill: t.chartText }} stroke={t.chartGrid} />
+              <Tooltip formatter={v => formatCurrency(v)} contentStyle={{ borderRadius: '8px', border: `1px solid ${t.chartTooltipBorder}`, backgroundColor: t.chartTooltipBg, color: t.chartTooltipText }} />
+              <Legend wrapperStyle={{ color: t.chartText }} />
+              <Line type="monotone" dataKey="income" name="Receitas" stroke={t.success} strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="expenses" name="Despesas" stroke={t.danger} strokeWidth={2} dot={{ r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
 

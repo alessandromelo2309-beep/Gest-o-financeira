@@ -64,6 +64,8 @@ export default function ChatAssistant() {
     { label: '💎 Economia', msg: 'Minha economia' },
     { label: '📋 Resumo', msg: 'Resumo financeiro' },
     { label: '📊 Comparar', msg: 'Comparar meses' },
+    { label: '🧠 Sugestões', msg: 'Me dê sugestões de gastos' },
+    { label: '🚨 Alertas', msg: 'Meus alertas financeiros' },
     { label: '🧮 Calcular', msg: '250 * 12' },
     { label: '💡 Ideias', msg: 'Me dê ideias de negócio' },
   ];
@@ -84,23 +86,21 @@ export default function ChatAssistant() {
   return (
     <>
       {!isOpen && (
-        <button onClick={() => setIsOpen(true)} style={{
-          position: 'fixed', bottom: '24px', right: '24px', width: '60px', height: '60px',
+        <button onClick={() => setIsOpen(true)} className="chat-fab" style={{
+          position: 'fixed', bottom: '90px', right: '20px', width: '56px', height: '56px',
           borderRadius: '50%', background: 'linear-gradient(135deg, #6366F1, #8B5CF6, #A855F7)',
           border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
           justifyContent: 'center', boxShadow: '0 4px 24px rgba(99,102,241,0.5)',
-          zIndex: 9999, transition: 'all 0.3s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 30px rgba(99,102,241,0.6)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 24px rgba(99,102,241,0.5)'; }}>
-          <MessageCircle size={26} color="white" />
+          zIndex: 9998, transition: 'all 0.3s',
+        }}>
+          <MessageCircle size={24} color="white" />
         </button>
       )}
 
       {isOpen && (
-        <div style={{
-          position: 'fixed', bottom: '24px', right: '24px', width: '400px', height: '600px',
-          maxHeight: 'calc(100vh - 48px)', backgroundColor: t.bgCard, borderRadius: '20px',
+        <div className="chat-panel" style={{
+          position: 'fixed', bottom: '20px', right: '20px', width: 'min(400px, calc(100vw - 40px))', height: 'min(600px, calc(100vh - 120px))',
+          maxHeight: 'calc(100vh - 120px)', backgroundColor: t.bgCard, borderRadius: '20px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column',
           overflow: 'hidden', zIndex: 9999, border: `1px solid ${t.border}`, transition: 'all 0.3s',
         }}>

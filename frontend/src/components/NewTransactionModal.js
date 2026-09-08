@@ -40,14 +40,14 @@ export default function NewTransactionModal({ isOpen, onClose, onCreated }) {
   };
 
   const filteredCategories = categories.filter(c => c.type === form.type);
-  const inputStyle = { width: '100%', padding: '10px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s' };
-  const selectStyle = { ...inputStyle, cursor: 'pointer' };
+  const inputStyle = { width: '100%', padding: '12px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '16px', outline: 'none', boxSizing: 'border-box', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s', minHeight: '48px' };
+  const selectStyle = { ...inputStyle, cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: '36px' };
   const labelStyle = { fontSize: '13px', fontWeight: '600', color: t.textSecondary, display: 'block', marginBottom: '6px' };
 
   if (success) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} title="Novo Lançamento">
-        <div style={{ textAlign: 'center', padding: '40px' }}>
+        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: t.successLight, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <Check size={32} color={t.success} />
           </div>
@@ -65,8 +65,8 @@ export default function NewTransactionModal({ isOpen, onClose, onCreated }) {
           {['expense', 'income', 'transfer'].map(tipo => (
             <button key={tipo} type="button" onClick={() => setForm({ ...form, type: tipo, category_id: '' })}
               style={{
-                flex: 1, padding: '10px', border: '2px solid', borderRadius: '8px', cursor: 'pointer',
-                fontWeight: '600', fontSize: '13px', transition: 'all 0.2s',
+                flex: 1, padding: '12px 8px', border: '2px solid', borderRadius: '10px', cursor: 'pointer',
+                fontWeight: '600', fontSize: '13px', transition: 'all 0.2s', minHeight: '48px',
                 borderColor: form.type === tipo ? (tipo === 'expense' ? t.danger : tipo === 'income' ? t.success : t.primary) : t.border,
                 backgroundColor: form.type === tipo ? (tipo === 'expense' ? t.bgDanger : tipo === 'income' ? t.bgSuccess : t.bgInfo) : t.bgCard,
                 color: form.type === tipo ? (tipo === 'expense' ? t.textDanger : tipo === 'income' ? t.textSuccess : t.textInfo) : t.textMuted,
@@ -84,7 +84,7 @@ export default function NewTransactionModal({ isOpen, onClose, onCreated }) {
           <div>
             <label style={labelStyle}>Valor (R$)</label>
             <input type="number" step="0.01" min="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}
-              style={inputStyle} placeholder="0,00" required />
+              style={inputStyle} placeholder="0,00" required inputMode="decimal" />
           </div>
           <div>
             <label style={labelStyle}>Data</label>
@@ -92,7 +92,7 @@ export default function NewTransactionModal({ isOpen, onClose, onCreated }) {
           </div>
         </div>
         {form.type === 'transfer' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '12px', alignItems: 'end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
               <label style={labelStyle}>Conta Origem</label>
               <select value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })} style={selectStyle} required>
@@ -100,7 +100,7 @@ export default function NewTransactionModal({ isOpen, onClose, onCreated }) {
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({formatCurrency(a.balance)})</option>)}
               </select>
             </div>
-            <div style={{ paddingBottom: '4px', fontSize: '20px', color: t.textMuted }}>→</div>
+            <div style={{ textAlign: 'center', fontSize: '20px', color: t.textMuted }}>↓</div>
             <div>
               <label style={labelStyle}>Conta Destino</label>
               <select value={form.to_account_id} onChange={e => setForm({ ...form, to_account_id: e.target.value })} style={selectStyle} required>
@@ -132,16 +132,17 @@ export default function NewTransactionModal({ isOpen, onClose, onCreated }) {
           <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
             style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }} placeholder="Opcional..." />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
-          <button type="button" onClick={onClose} style={{
-            padding: '10px 20px', backgroundColor: t.bgHover, color: t.textSecondary,
-            border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-          }}>Cancelar</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
           <button type="submit" disabled={loading} style={{
-            padding: '10px 24px', backgroundColor: t.primary, color: t.textOnPrimary,
-            border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600',
-            cursor: 'pointer', opacity: loading ? 0.7 : 1,
+            padding: '14px 24px', backgroundColor: t.primary, color: t.textOnPrimary,
+            border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600',
+            cursor: 'pointer', opacity: loading ? 0.7 : 1, width: '100%', minHeight: '48px',
           }}>{loading ? 'Salvando...' : 'Salvar Lançamento'}</button>
+          <button type="button" onClick={onClose} style={{
+            padding: '12px 20px', backgroundColor: 'transparent', color: t.textSecondary,
+            border: `1px solid ${t.border}`, borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+            width: '100%', minHeight: '44px',
+          }}>Cancelar</button>
         </div>
       </form>
     </Modal>

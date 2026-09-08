@@ -16,7 +16,14 @@ import CreditCardsPage from './pages/CreditCards';
 import GoalsPage from './pages/Goals';
 import SettingsPage from './pages/Settings';
 import AnalyticsPage from './pages/Analytics';
+import RecurringPage from './pages/Recurring';
+import ImportPage from './pages/Import';
+import NotificationsPage from './pages/Notifications';
+import GamificationPage from './pages/Gamification';
+import CalculatorsPage from './pages/Calculators';
+import PlanningPage from './pages/Planning';
 import { CreditCard, Target } from 'lucide-react';
+import './mobile.css';
 
 function LoginPage() {
   const { theme: t } = useTheme();
@@ -48,19 +55,19 @@ function LoginPage() {
           {!isLogin && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '13px', fontWeight: '600', color: t.textSecondary }}>Nome</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} style={{ padding: '11px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '14px', outline: 'none', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s' }} required />
+              <input type="text" value={name} onChange={e => setName(e.target.value)} style={{ padding: '11px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '16px', outline: 'none', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s', width: '100%', boxSizing: 'border-box' }} required />
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '13px', fontWeight: '600', color: t.textSecondary }}>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '11px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '14px', outline: 'none', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s' }} required />
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={{ padding: '11px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '16px', outline: 'none', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s', width: '100%', boxSizing: 'border-box' }} required />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '13px', fontWeight: '600', color: t.textSecondary }}>Senha</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '11px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '14px', outline: 'none', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s' }} required minLength={6} />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={{ padding: '11px 14px', border: `1px solid ${t.borderInput}`, borderRadius: '10px', fontSize: '16px', outline: 'none', backgroundColor: t.bgInput, color: t.text, transition: 'all 0.3s', width: '100%', boxSizing: 'border-box' }} required minLength={6} />
           </div>
           {error && <p style={{ color: t.danger, fontSize: '13px', textAlign: 'center', margin: 0 }}>{error}</p>}
-          <button type="submit" disabled={loading} style={{ padding: '12px', background: 'linear-gradient(135deg, #3B82F6, #2563EB)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '8px', opacity: loading ? 0.7 : 1 }}>
+          <button type="submit" disabled={loading} style={{ padding: '12px', background: 'linear-gradient(135deg, #3B82F6, #2563EB)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', marginTop: '8px', opacity: loading ? 0.7 : 1, minHeight: '48px' }}>
             {loading ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar Conta'}
           </button>
         </form>
@@ -108,6 +115,12 @@ function AppContent() {
           <Route path="/metas" element={<GoalsPage key={refreshKey} />} />
           <Route path="/relatorios" element={<ReportsPage key={refreshKey} />} />
           <Route path="/analises" element={<AnalyticsPage key={refreshKey} />} />
+          <Route path="/recorrentes" element={<RecurringPage key={refreshKey} />} />
+          <Route path="/importar" element={<ImportPage key={refreshKey} />} />
+          <Route path="/notificacoes" element={<NotificationsPage key={refreshKey} />} />
+          <Route path="/gamificacao" element={<GamificationPage key={refreshKey} />} />
+          <Route path="/calculadoras" element={<CalculatorsPage key={refreshKey} />} />
+          <Route path="/planejamento" element={<PlanningPage key={refreshKey} />} />
           <Route path="/configuracoes" element={<SettingsPage key={refreshKey} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -126,8 +139,15 @@ export default function App() {
         <style>{`
           @keyframes spin { to { transform: rotate(360deg); } }
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
-          @media (max-width: 768px) { .main-layout { margin-left: 0 !important; } }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+          input, select, textarea { font-size: 16px !important; }
+          @media (max-width: 768px) {
+            .app-main { margin-left: 0 !important; }
+            .app-content { padding-bottom: 80px !important; }
+          }
+          @media (min-width: 769px) {
+            .mobile-nav { display: none !important; }
+          }
         `}</style>
       </ThemeProvider>
     </AuthProvider>

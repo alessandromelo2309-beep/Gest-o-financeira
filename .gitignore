@@ -1,6 +1,8 @@
 node_modules/
 frontend/build/
 backend/database.sqlite
+backend/.env
+backups/
 *.log
 .env
 .DS_Store

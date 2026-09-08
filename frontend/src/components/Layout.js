@@ -3,11 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, ArrowUpDown, TrendingUp, TrendingDown, CreditCard, Layers, Tag,
   Target, BarChart3, Brain, Bell, Settings, LogOut, Plus, Menu, X, Search,
-  Wallet, ChevronDown, Sun, Moon
+  Wallet, ChevronDown, Sun, Moon, Repeat, Upload, Download, Trophy, Calculator, Compass
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { apiCall } from '../api';
+import { api } from '../api';
 
 const NAV_ITEMS = [
   { path: '/', icon: Home, label: 'Dashboard' },
@@ -19,17 +19,31 @@ const NAV_ITEMS = [
   { path: '/categorias', icon: Tag, label: 'Categorias' },
   { path: '/orcamentos', icon: Target, label: 'Orçamentos' },
   { path: '/metas', icon: Target, label: 'Metas' },
+  { path: '/recorrentes', icon: Repeat, label: 'Recorrentes' },
+  { path: '/importar', icon: Upload, label: 'Importar' },
   { path: '/relatorios', icon: BarChart3, label: 'Relatórios' },
   { path: '/analises', icon: Brain, label: 'Análises' },
+  { path: '/planejamento', icon: Compass, label: 'Planejamento' },
+  { path: '/calculadoras', icon: Calculator, label: 'Calculadoras' },
+  { path: '/gamificacao', icon: Trophy, label: 'Gamificação' },
   { path: '/configuracoes', icon: Settings, label: 'Configurações' },
 ];
 
+const MOBILE_NAV = [
+  { path: '/', icon: Home, label: 'Início' },
+  { path: '/lancamentos', icon: ArrowUpDown, label: 'Lançamentos' },
+  { path: '__new__', icon: Plus, label: 'Novo', isFAB: true },
+  { path: '/metas', icon: Target, label: 'Metas' },
+  { path: '__menu__', icon: Menu, label: 'Menu' },
+];
+
 export default function Layout({ children, onNewTransaction }) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, autoMode, toggleAutoMode } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -54,13 +68,11 @@ export default function Layout({ children, onNewTransaction }) {
 
   const loadNotifications = async () => {
     try {
-      const data = await apiCall('/reports/upcoming?days=7');
-      const notifs = [];
-      if (data.overdue && data.overdue.length > 0)
-        notifs.push({ type: 'danger', text: `${data.overdue.length} conta(s) atrasada(s)`, count: data.overdue.length });
-      if (data.upcoming && data.upcoming.length > 0)
-        notifs.push({ type: 'warning', text: `${data.upcoming.length} conta(s) vencendo em breve`, count: data.upcoming.length });
-      setNotifications(notifs);
+      const res = await api.get('/notifications/unread');
+      setUnreadCount(res.data.count || 0);
+      const notifRes = await api.get('/notifications');
+      const items = (notifRes.data || []).slice(0, 5);
+      setNotifications(items);
     } catch (err) { console.error(err); }
   };
 
@@ -72,17 +84,31 @@ export default function Layout({ children, onNewTransaction }) {
     }
   };
 
-  const unreadCount = notifications.reduce((sum, n) => sum + n.count, 0);
   const getPageTitle = () => {
     const item = NAV_ITEMS.find(i => i.path === location.pathname);
     return item ? item.label : 'GESTÃO FINANCEIRA';
+  };
+
+  const handleMobileNav = (path) => {
+    if (path === '__new__') {
+      onNewTransaction && onNewTransaction();
+    } else if (path === '__menu__') {
+      setSidebarOpen(true);
+    } else {
+      navigate(path);
+    }
+  };
+
+  const isActive = (path) => {
+    if (path === '__new__' || path === '__menu__') return false;
+    return location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
   };
 
   const t = theme;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: t.bg, transition: 'background-color 0.3s' }}>
-      {sidebarOpen && <div onClick={() => setSidebarOpen(false)}
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)}
         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999 }} />}
 
       <aside className={`app-sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}
@@ -109,6 +135,7 @@ export default function Layout({ children, onNewTransaction }) {
             const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (
               <Link key={item.path} to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px',
                   borderRadius: '8px', textDecoration: 'none',
@@ -124,7 +151,7 @@ export default function Layout({ children, onNewTransaction }) {
         </nav>
 
         <div style={{ padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <button onClick={() => { logout(); navigate('/login'); }}
+          <button onClick={() => { logout(); navigate('/login'); setSidebarOpen(false); }}
             style={{
               display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px',
               background: 'none', border: 'none', width: '100%', cursor: 'pointer',
@@ -145,7 +172,7 @@ export default function Layout({ children, onNewTransaction }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button onClick={() => setSidebarOpen(true)} className="app-menu-btn"
-              style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: t.textSecondary, padding: '4px' }}>
+              style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', color: t.textSecondary, padding: '8px', borderRadius: '8px', minHeight: '44px', minWidth: '44px', alignItems: 'center', justifyContent: 'center' }}>
               <Menu size={22} />
             </button>
             <h1 style={{ fontSize: '18px', fontWeight: '700', color: t.text, margin: 0, transition: 'color 0.3s' }}>
@@ -159,6 +186,7 @@ export default function Layout({ children, onNewTransaction }) {
                 position: 'relative', background: 'none', border: `1px solid ${t.border}`, borderRadius: '8px',
                 cursor: 'pointer', color: t.textMuted, padding: '8px', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
+                minHeight: '40px', minWidth: '40px',
               }}>
               <Search size={18} />
             </button>
@@ -169,6 +197,7 @@ export default function Layout({ children, onNewTransaction }) {
                   position: 'relative', background: 'none', border: `1px solid ${t.border}`, borderRadius: '8px',
                   cursor: 'pointer', color: t.textMuted, padding: '8px', display: 'flex',
                   alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
+                  minHeight: '40px', minWidth: '40px',
                 }}>
                 <Bell size={18} />
                 {unreadCount > 0 && (
@@ -185,20 +214,22 @@ export default function Layout({ children, onNewTransaction }) {
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0,
                   backgroundColor: t.bgDropdown, borderRadius: '12px',
                   boxShadow: t.shadowLg, border: `1px solid ${t.border}`,
-                  minWidth: '240px', overflow: 'hidden', zIndex: 1000,
+                  minWidth: '280px', maxWidth: '90vw', overflow: 'hidden', zIndex: 1000,
                 }}>
-                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${t.borderLight}`, fontSize: '12px', color: t.textMuted, fontWeight: '600' }}>
-                    Notificações
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${t.borderLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '13px', color: t.textMuted, fontWeight: '600' }}>Notificações</span>
+                    <button onClick={() => { navigate('/notificacoes'); setNotifOpen(false); }}
+                      style={{ background: 'none', border: 'none', color: t.primary, cursor: 'pointer', fontSize: '12px' }}>Ver todas</button>
                   </div>
                   {notifications.length === 0 ? (
                     <div style={{ padding: '20px 16px', textAlign: 'center', color: t.textLight, fontSize: '13px' }}>Nenhuma notificação</div>
-                  ) : notifications.map((n, i) => (
-                    <div key={i} style={{
-                      padding: '12px 16px',
-                      backgroundColor: n.type === 'danger' ? t.bgDanger : t.bgWarning,
-                      borderLeft: `3px solid ${n.type === 'danger' ? t.danger : t.warning}`,
+                  ) : notifications.map((n) => (
+                    <div key={n.id} style={{
+                      padding: '12px 16px', borderBottom: `1px solid ${t.borderLight}`,
+                      backgroundColor: n.read ? 'transparent' : t.bgHover,
                     }}>
-                      <span style={{ color: n.type === 'danger' ? t.textDanger : t.textWarning, fontSize: '13px' }}>{n.text}</span>
+                      <div style={{ fontSize: '13px', fontWeight: n.read ? '400' : '600', color: t.text }}>{n.title}</div>
+                      <div style={{ fontSize: '12px', color: t.textMuted, marginTop: '2px' }}>{n.message}</div>
                     </div>
                   ))}
                 </div>
@@ -210,17 +241,31 @@ export default function Layout({ children, onNewTransaction }) {
                 padding: '8px 16px', backgroundColor: t.primary, color: t.textOnPrimary,
                 border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-                transition: 'background-color 0.15s',
+                transition: 'background-color 0.15s', minHeight: '40px',
               }}>
               <Plus size={18} />
               <span>Lançamento</span>
             </button>
 
+            <button onClick={toggleAutoMode}
+              className="app-auto-btn"
+              style={{
+                background: autoMode ? 'rgba(59,130,246,0.1)' : 'none', border: `1px solid ${autoMode ? t.primary : t.border}`, borderRadius: '8px',
+                cursor: 'pointer', color: autoMode ? t.primary : t.textMuted, padding: '8px', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
+                minHeight: '40px', minWidth: '40px',
+              }}
+              title={autoMode ? 'Modo automático (ativo)' : 'Ativar modo automático (segue horário do sistema)'}>
+              <span style={{ fontSize: '11px', fontWeight: '600' }}>AUTO</span>
+            </button>
+
             <button onClick={toggleTheme}
+              className="app-theme-btn"
               style={{
                 background: 'none', border: `1px solid ${t.border}`, borderRadius: '8px',
                 cursor: 'pointer', color: t.textMuted, padding: '8px', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
+                minHeight: '40px', minWidth: '40px',
               }}
               title={t.name === 'light' ? 'Alternar para tema escuro' : 'Alternar para tema claro'}>
               {t.name === 'light' ? <Moon size={18} /> : <Sun size={18} />}
@@ -228,6 +273,7 @@ export default function Layout({ children, onNewTransaction }) {
 
             <div ref={userMenuRef} style={{ position: 'relative' }}>
               <button onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="app-user-menu"
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px', background: 'none',
                   border: `1px solid ${t.border}`, borderRadius: '8px', padding: '6px 10px',
@@ -247,7 +293,7 @@ export default function Layout({ children, onNewTransaction }) {
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0,
                   backgroundColor: t.bgDropdown, borderRadius: '12px',
                   boxShadow: t.shadowLg, border: `1px solid ${t.border}`,
-                  minWidth: '240px', overflow: 'hidden', zIndex: 1000,
+                  minWidth: '200px', overflow: 'hidden', zIndex: 1000,
                 }}>
                   <div style={{ padding: '12px 16px', borderBottom: `1px solid ${t.borderLight}`, fontSize: '12px', color: t.textMuted, fontWeight: '600' }}>
                     {user?.email}
@@ -284,9 +330,9 @@ export default function Layout({ children, onNewTransaction }) {
               <Search size={18} color={t.textLight} />
               <input ref={searchRef} type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Buscar lançamentos, categorias..." autoFocus
-                style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: '14px', color: t.text }} />
+                style={{ flex: 1, border: 'none', background: 'none', outline: 'none', fontSize: '14px', color: t.text, minWidth: 0 }} />
               <button type="button" onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted }}>
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: t.textMuted, padding: '4px' }}>
                 <X size={18} />
               </button>
             </form>
@@ -297,6 +343,41 @@ export default function Layout({ children, onNewTransaction }) {
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="mobile-nav">
+        {MOBILE_NAV.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
+          return (
+            <button
+              key={item.path}
+              className={item.isFAB ? 'mobile-nav-fab' : 'mobile-nav-item'}
+              onClick={() => handleMobileNav(item.path)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                background: item.isFAB ? t.primary : 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: item.isFAB ? 'white' : active ? t.primary : t.textMuted,
+                fontSize: '10px',
+                fontWeight: active ? '600' : '500',
+                padding: '6px 0',
+                minWidth: 0,
+                flex: item.isFAB ? '0 0 auto' : '1',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Icon size={item.isFAB ? 24 : 20} />
+              {!item.isFAB && <span>{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
