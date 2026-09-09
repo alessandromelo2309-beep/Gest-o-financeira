@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Viagens - Fluxo Completo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
+        
+        /* Header */
+        .header { background: #1a237e; color: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; }
+        .header-user { display: flex; align-items: center; gap: 15px; }
+        .header-user span { font-size: 14px; }
+        .btn-logout { background: #c62828; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        
+        /* Layout */
+        .layout { display: flex; min-height: calc(100vh - 55px); }
+        
+        /* Sidebar */
+        .sidebar { width: 220px; background: #283593; color: #fff; padding: 20px 0; }
+        .menu-item { padding: 12px 20px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .menu-item:hover { background: #3949ab; }
+        .menu-item.active { background: #1a237e; border-left: 3px solid #fff; }
+        .menu-item span.icon { font-size: 18px; }
+        
+        /* Main Content */
+        .main { flex: 1; padding: 25px; }
+        
+        /* Pages */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* Cards */
+        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .card h2 { font-size: 16px; color: #333; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .card h3 { font-size: 14px; color: #555; margin: 15px 0 10px; }
+        
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #fff; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .stat-value { font-size: 28px; font-weight: bold; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+        .stat-card.green .stat-value { color: #2e7d32; }
+        .stat-card.orange .stat-value { color: #e65100; }
+        .stat-card.red .stat-value { color: #c62828; }
+        .stat-card.blue .stat-value { color: #1565c0; }
+        
+        /* Tables */
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table th { background: #f5f5f5; padding: 12px 10px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #ddd; }
+        .table td { padding: 10px; border-bottom: 1px solid #eee; }
+        .table tr:hover { background: #fafafa; }
+        
+        /* Status badges */
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge.pending { background: #fff3e0; color: #e65100; }
+        .badge.approved { background: #e8f5e9; color: #2e7d32; }
+        .badge.rejected { background: #ffebee; color: #c62828; }
+        .badge.review { background: #e3f2fd; color: #1565c0; }
+        
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 13px; color: #555; margin-bottom: 6px; font-weight: 500; }
+        .form-group label .required { color: #c62828; }
+        
+        input, select, textarea {
+            padding: 10px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; transition: border 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #1976d2; }
+        
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background: #1976d2; color: #fff; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn-danger { background: #c62828; color: #fff; }
+        .btn-outline { background: #fff; border: 1px solid #ddd; color: #333; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        
+        /* Rules Panel */
+        .rules-panel { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; }
+        .rule-item { display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 4px; border-left: 4px solid #ccc; }
+        .rule-item.active { border-left-color: #4caf50; background: #e8f5e9; }
+        .rule-item.reject { border-left-color: #f44336; background: #ffebee; }
+        .rule-item.approval { border-left-color: #ff9800; background: #fff3e0; }
+        .rule-number { width: 25px; height: 25px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 10px; }
+        .rule-item.active .rule-number { background: #4caf50; color: #fff; }
+        .rule-item.reject .rule-number { background: #f44336; color: #fff; }
+        .rule-item.approval .rule-number { background: #ff9800; color: #fff; }
+        .rule-info { flex: 1; }
+        .rule-name { font-weight: 600; font-size: 13px; color: #333; }
+        .rule-condition { font-size: 12px; color: #666; margin-top: 3px; }
+        .rule-result { font-size: 11px; padding: 3px 8px; border-radius: 10px; }
+        .rule-result.approved { background: #c8e6c9; color: #2e7d32; }
+        .rule-result.rejected { background: #ffcdd2; color: #c62828; }
+        .rule-result.pending { background: #ffe0b2; color: #e65100; }
+        
+        /* Timeline */
+        .timeline { padding: 10px 0; }
+        .timeline-item { display: flex; gap: 15px; padding: 10px 0; position: relative; }
+        .timeline-item:not(:last-child)::after { content: ''; position: absolute; left: 15px; top: 40px; bottom: 0; width: 2px; background: #e0e0e0; }
+        .timeline-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .timeline-dot.created { background: #e3f2fd; }
+        .timeline-dot.pending { background: #fff3e0; }
+        .timeline-dot.approved { background: #e8f5e9; }
+        .timeline-dot.rejected { background: #ffebee; }
+        .timeline-content { flex: 1; }
+        .timeline-title { font-weight: 600; font-size: 13px; color: #333; }
+        .timeline-desc { font-size: 12px; color: #666; margin-top: 3px; }
+        .timeline-time { font-size: 11px; color: #999; }
+        
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 8px; width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* Detail Grid */
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .detail-item { padding: 10px; background: #fafafa; border-radius: 4px; }
+        .detail-label { font-size: 11px; color: #666; text-transform: uppercase; }
+        .detail-value { font-size: 14px; color: #333; font-weight: 500; margin-top: 4px; }
+        
+        /* Empty State */
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .empty-state span.icon { font-size: 48px; display: block; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>✈️ Sistema de Gestão de Viagens</h1>
+        <div class="header-user">
+            <span>Olá, <strong id="currentUserName">Usuário</strong></span>
+            <button class="btn-logout" onclick="logout()">Sair</button>
+        </div>
+    </div>
+    
+    <div class="layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="menu-item active" onclick="showPage('dashboard')">
+                <span class="icon">📊</span> Dashboard
+            </div>
+            <div class="menu-item" onclick="showPage('nova-solicitacao')">
+                <span class="icon">➕</span> Nova Solicitação
+            </div>
+            <div class="menu-item" onclick="showPage('minhas-solicitacoes')">
+                <span class="icon">📋</span> Minhas Solicitações
+            </div>
+            <div class="menu-item" id="menuAprovacoes" onclick="showPage('aprovacoes')">
+                <span class="icon">✅</span> Aprovações Pendentes
+            </div>
+            <div class="menu-item" onclick="showPage('regua-decisao')">
+                <span class="icon">⚖️</span> Régua de Decisão
+            </div>
+            <div class="menu-item" onclick="showPage('historico')">
+                <span class="icon">📜</span> Histórico
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main">
+            
+            <!-- PAGE: Dashboard -->
+            <div class="page active" id="page-dashboard">
+                <h2 style="margin-bottom: 20px;">Dashboard</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">Total de Solicitações</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-value" id="statPendentes">0</div>
+                        <div class="stat-label">Pendentes</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value" id="statAprovadas">0</div>
+                        <div class="stat-label">Aprovadas</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-value" id="statRecusadas">0</div>
+                        <div class="stat-label">Recusadas</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Últimas Solicitações</h2>
+                    <table class="table" id="dashboardTable">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Solicitante</th>
+                                <th>Destino</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Nova Solicitação -->
+            <div class="page" id="page-nova-solicitacao">
+                <h2 style="margin-bottom: 20px;">Nova Solicitação de Viagem</h2>
+                
+                <div class="card">
+                    <form id="formSolicitacao" onsubmit="return false;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Solicitante <span class="required">*</span></label>
+                                <input type="text" id="solicitante" value="" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Perfil</label>
+                                <select id="perfil" onchange="updateForm()">
+                                    <option value="geral">Geral</option>
+                                    <option value="irrestrito">Irrestrito (VP-2)</option>
+                                    <option value="lider">Líder</option>
+                                    <option value="staff">Staff</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Destino <span class="required">*</span></label>
+                                <input type="text" id="destino" placeholder="Ex: São Paulo - SP">
+                            </div>
+                            <div class="form-group">
+                                <label>Motivo <span class="required">*</span></label>
+                                <select id="motivo">
+                                    <option value="">Selecione...</option>
+                                    <option value="reuniao">Reunião</option>
+                                    <option value="capacitacao">Capacitação</option>
+                                    <option value="obra">Obra</option>
+                                    <option value="visita">Visita técnica</option>
+                                    <option value="outro">Outro</option>
+                                    <option value="emergencia">Emergência</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Categoria PNR <span class="required">*</span></label>
+                                <select id="categoria">
+                                    <option value="">Selecione...</option>
+                                    <option value="economica">Econômica</option>
+                                    <option value="executiva">Executiva</option>
+                                    <option value="prime">Prime</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Valor Estimado (R$) <span class="required">*</span></label>
+                                <input type="number" id="valorEstimado" min="0" step="0.01" placeholder="0,00">
+                            </div>
+                            <div class="form-group">
+                                <label>Data de Ida <span class="required">*</span></label>
+                                <input type="date" id="dataIda">
+                            </div>
+                            <div class="form-group">
+                                <label>Data de Volta</label>
+                                <input type="date" id="dataVolta">
+                            </div>
+                            <div class="form-group">
+                                <label>Horário do Deslocamento</label>
+                                <input type="time" id="horario">
+                            </div>
+                            <div class="form-group">
+                                <label>Antecedência (minutos)</label>
+                                <input type="number" id="antecedencia" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Teto da Categoria (R$)</label>
+                                <input type="number" id="tetoCategoria" readonly>
+                            </div>
+                        </div>
+                        
+                        <h3>Informações do Trajeto</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="incluiResidencia"> Trajeto inclui residência
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="coletivoAtende"> Transporte coletivo atende o horário
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="deslocamentoRecorrente"> Deslocamento recorrente
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <h3>Observações</h3>
+                        <div class="form-group full">
+                            <textarea id="observacoes" rows="3" placeholder="Descreva brevemente o motivo da viagem..."></textarea>
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary" onclick="enviarSolicitacao()">Enviar Solicitação</button>
+                            <button type="button" class="btn btn-outline" onclick="limparFormulario()">Limpar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- PAGE: Minhas Solicitações -->
+            <div class="page" id="page-minhas-solicitacoes">
+                <h2 style="margin-bottom: 20px;">Minhas Solicitações</h2>
+                
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Destino</th>
+                                <th>Motivo</th>
+                                <th>Valor</th>
+                                <th>Data Ida</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="minhasSolicitacoesBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Aprovações -->
+            <div class="page" id="page-aprovacoes">
+                <h2 style="margin-bottom: 20px;">Aprovações Pendentes</h2>
+                
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Solicitante</th>
+                                <th>Perfil</th>
+                                <th>Destino</th>
+                                <th>Valor</th>
+                                <th>Regra Aplicada</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aprovacoesBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Régua de Decisão -->
+            <div class="page" id="page-regua-decisao">
+                <h2 style="margin-bottom: 20px;">Régua de Decisão</h2>
+                
+                <div class="card">
+                    <h2>Regras Configuradas</h2>
+                    <div class="rules-panel">
+                        <div class="rule-item" id="rule1">
+                            <div class="rule-number">1</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Emergência — não interrompe o processo</div>
+                                <div class="rule-condition">Motivo emergencial é sim → Prossegue sem aprovação</div>
+                            </div>
+                            <span class="rule-result approved">Aprovação</span>
+                        </div>
+                        <div class="rule-item" id="rule2">
+                            <div class="rule-number">2</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Perfil Irrestrito — prerrogativa VP-2</div>
+                                <div class="rule-condition">Perfil do solicitante é irrestrito → Prossegue sem aprovação</div>
+                            </div>
+                            <span class="rule-result approved">Aprovação</span>
+                        </div>
+                        <div class="rule-item" id="rule3">
+                            <div class="rule-number">3</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Antecedência inferior ao mínimo definido</div>
+                                <div class="rule-condition">Antecedência abaixo do mínimo é sim → Recusa a solicitação</div>
+                            </div>
+                            <span class="rule-result rejected">Recusa</span>
+                        </div>
+                        <div class="rule-item" id="rule4">
+                            <div class="rule-number">4</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Valor excedente ao teto da categoria</div>
+                                <div class="rule-condition">Valor excede o teto da categoria é sim → Requer aprovação VP-2</div>
+                            </div>
+                            <span class="rule-result pending">Aprovação VP-2</span>
+                        </div>
+                        <div class="rule-item" id="rule5">
+                            <div class="rule-number">5</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Transporte coletivo disponível no trajeto</div>
+                                <div class="rule-condition">Trajeto inclui residência + Coletivo atende horário → Requer aprovação VP-2</div>
+                            </div>
+                            <span class="rule-result pending">Aprovação VP-2</span>
+                        </div>
+                        <div class="rule-item" id="rule6">
+                            <div class="rule-number">6</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Staff em deslocamento recorrente</div>
+                                <div class="rule-condition">Perfil staff + Deslocamento recorrente → Requer aprovação VP-3 (lote mensal)</div>
+                            </div>
+                            <span class="rule-result pending">Aprovação VP-3</span>
+                        </div>
+                        <div class="rule-item" id="rule7">
+                            <div class="rule-number">7</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Perfil Líder — autoaprovação</div>
+                                <div class="rule-condition">Perfil do solicitante é líder → Prossegue sem aprovação</div>
+                            </div>
+                            <span class="rule-result approved">Aprovação</span>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin-top: 20px;">Regra Padrão (Fallback)</h3>
+                    <p style="padding: 15px; background: #f5f5f5; border-radius: 4px; font-size: 14px;">
+                        Se nenhuma regra for atendida → <strong>Requer aprovação — Líder direto do solicitante</strong>
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <h2>Simulador de Régua</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Perfil</label>
+                            <select id="simPerfil">
+                                <option value="geral">Geral</option>
+                                <option value="irrestrito">Irrestrito</option>
+                                <option value="lider">Líder</option>
+                                <option value="staff">Staff</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Motivo</label>
+                            <select id="simMotivo">
+                                <option value="reuniao">Reunião</option>
+                                <option value="emergencia">Emergência</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor (R$)</label>
+                            <input type="number" id="simValor" value="100">
+                        </div>
+                        <div class="form-group">
+                            <label>Teto (R$)</label>
+                            <input type="number" id="simTeto" value="180">
+                        </div>
+                        <div class="form-group">
+                            <label>Antecedência (min)</label>
+                            <input type="number" id="simAntecedencia" value="120">
+                        </div>
+                        <div class="form-group">
+                            <label>Antecedência Mínima (min)</label>
+                            <input type="number" id="simAntecedenciaMinima" value="60">
+                        </div>
+                    </div>
+                    <div class="form-grid" style="margin-top: 10px;">
+                        <div class="form-group">
+                            <label><input type="checkbox" id="simResidencia"> Residência no trajeto</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="simColetivo"> Coletivo atende horário</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="simRecorrente"> Deslocamento recorrente</label>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top: 15px;" onclick="simularRegra()">Simular</button>
+                    
+                    <div id="simResultado" style="margin-top: 20px; display: none;">
+                        <div class="card" style="margin-bottom: 0;">
+                            <h3>Resultado da Simulação</h3>
+                            <div id="simResultadoContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PAGE: Histórico -->
+            <div class="page" id="page-historico">
+                <h2 style="margin-bottom: 20px;">Histórico de Solicitações</h2>
+                
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Solicitante</th>
+                                <th>Perfil</th>
+                                <th>Destino</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Data Criação</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historicoBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Modal Detalhes -->
+    <div class="modal-overlay" id="modalDetalhes">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Detalhes da Solicitação</h3>
+                <button class="modal-close" onclick="closeModal('modalDetalhes')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="detalhesContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalDetalhes')">Fechar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Aprovar/Recusar -->
+    <div class="modal-overlay" id="modalAprovar">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Aprovar/Recusar Solicitação</h3>
+                <button class="modal-close" onclick="closeModal('modalAprovar')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalAprovarText"></p>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Observações</label>
+                    <textarea id="aprovacaoObservacao" rows="3" placeholder="Adicione observações..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="recusarSolicitacao()">Recusar</button>
+                <button class="btn btn-success" onclick="aprovarSolicitacao()">Aprovar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Timeline -->
+    <div class="modal-overlay" id="modalTimeline">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Histórico de Andamento</h3>
+                <button class="modal-close" onclick="closeModal('modalTimeline')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="timelineContent" class="timeline"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalTimeline')">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados do sistema
+        let currentUser = { nome: 'João Silva', perfil: 'geral', id: 1 };
+        let solicitacoes = [];
+        let proximoProtocolo = 1001;
+        
+        // Tetos por categoria
+        const tetos = {
+            'economica': 180,
+            'executiva': 350,
+            'prime': 600
+        };
+        
+        // Antecedência mínima por motivo
+        const antecedenciaMinima = {
+            'reuniao': 60,
+            'capacitacao': 120,
+            'obra': 180,
+            'visita': 60,
+            'outro': 60,
+            'emergencia': 0
+        };
+        
+        // Inicializar
+        function init() {
+            document.getElementById('currentUserName').textContent = currentUser.nome;
+            document.getElementById('solicitante').value = currentUser.nome;
+            
+            // Carregar dados salvos ou criar exemplos
+            const dadosSalvos = localStorage.getItem('solicitacoes');
+            if (dadosSalvos) {
+                solicitacoes = JSON.parse(dadosSalvos);
+                proximoProtocolo = Math.max(...solicitacoes.map(s => parseInt(s.protocolo))) + 1;
+            } else {
+                criarDadosExemplo();
+            }
+            
+            atualizarDashboard();
+            atualizarTabelas();
+        }
+        
+        function criarDadosExemplo() {
+            solicitacoes = [
+                {
+                    protocolo: '1001',
+                    solicitante: 'Maria Santos',
+                    perfil: 'geral',
+                    destino: 'São Paulo - SP',
+                    motivo: 'reuniao',
+                    categoria: 'economica',
+                    valorEstimado: 150,
+                    dataIda: '2026-09-01',
+                    dataVolta: '2026-09-02',
+                    horario: '08:00',
+                    antecedencia: 120,
+                    incluiResidencia: false,
+                    coletivoAtende: false,
+                    deslocamentoRecorrente: false,
+                    observacoes: 'Reunião com cliente',
+                    status: 'aprovado',
+                    regraAplicada: 0,
+                    quemAssina: 'Sem aprovação',
+                    dataCriacao: '2026-08-25 10:30',
+                    timeline: [
+                        { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 1001 gerado', data: '25/08 10:30' },
+                        { tipo: 'approved', titulo: 'Aprovado automaticamente', descricao: 'Regra padrão - valor dentro do teto', data: '25/08 10:30' }
+                    ]
+                },
+                {
+                    protocolo: '1002',
+                    solicitante: 'Pedro Oliveira',
+                    perfil: 'staff',
+                    destino: 'Rio de Janeiro - RJ',
+                    motivo: 'capacitacao',
+                    categoria: 'economica',
+                    valorEstimado: 250,
+                    dataIda: '2026-09-05',
+                    dataVolta: '2026-09-07',
+                    horario: '07:00',
+                    antecedencia: 45,
+                    incluiResidencia: true,
+                    coletivoAtende: true,
+                    deslocamentoRecorrente: true,
+                    observacoes: 'Treinamento mensal',
+                    status: 'pendente',
+                    regraAplicada: 6,
+                    quemAssina: 'VP-3 (lote mensal)',
+                    dataCriacao: '2026-08-26 14:15',
+                    timeline: [
+                        { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 1002 gerado', data: '26/08 14:15' },
+                        { tipo: 'pending', titulo: 'Aguardando aprovação', descricao: 'Regra 6: Staff em deslocamento recorrente - VP-3', data: '26/08 14:15' }
+                    ]
+                },
+                {
+                    protocolo: '1003',
+                    solicitante: 'Ana Costa',
+                    perfil: 'geral',
+                    destino: 'Curitiba - PR',
+                    motivo: 'reuniao',
+                    categoria: 'economica',
+                    valorEstimado: 450,
+                    dataIda: '2026-08-28',
+                    dataVolta: '2026-08-29',
+                    horario: '09:00',
+                    antecedencia: 30,
+                    incluiResidencia: false,
+                    coletivoAtende: false,
+                    deslocamentoRecorrente: false,
+                    observacoes: 'Reunião urgente com fornecedor',
+                    status: 'recusado',
+                    regraAplicada: 3,
+                    quemAssina: 'Solicitação recusada',
+                    dataCriacao: '2026-08-26 16:40',
+                    timeline: [
+                        { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 1003 gerado', data: '26/08 16:40' },
+                        { tipo: 'rejected', titulo: 'Solicitação recusada', descricao: 'Regra 3: Antecedência abaixo do mínimo (30 min < 60 min)', data: '26/08 16:40' }
+                    ]
+                },
+                {
+                    protocolo: '1004',
+                    solicitante: 'Carlos Mendes',
+                    perfil: 'lider',
+                    destino: 'Belo Horizonte - MG',
+                    motivo: 'obra',
+                    categoria: 'executiva',
+                    valorEstimado: 320,
+                    dataIda: '2026-09-10',
+                    dataVolta: '2026-09-12',
+                    horario: '06:30',
+                    antecedencia: 240,
+                    incluiResidencia: true,
+                    coletivoAtende: false,
+                    deslocamentoRecorrente: false,
+                    observacoes: 'Visita a obra em construção',
+                    status: 'aprovado',
+                    regraAplicada: 7,
+                    quemAssina: 'Sem aprovação (autoaprovação)',
+                    dataCriacao: '2026-08-27 08:00',
+                    timeline: [
+                        { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 1004 gerado', data: '27/08 08:00' },
+                        { tipo: 'approved', titulo: 'Aprovado automaticamente', descricao: 'Regra 7: Perfil Líder - autoaprovação', data: '27/08 08:00' }
+                    ]
+                }
+            ];
+            proximoProtocolo = 1005;
+            salvarDados();
+        }
+        
+        function salvarDados() {
+            localStorage.setItem('solicitacoes', JSON.stringify(solicitacoes));
+        }
+        
+        // Navegação
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            
+            document.getElementById('page-' + page).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if (page === 'minhas-solicitacoes') {
+                atualizarMinhasSolicitacoes();
+            } else if (page === 'aprovacoes') {
+                atualizarAprovacoes();
+            } else if (page === 'historico') {
+                atualizarHistorico();
+            }
+        }
+        
+        function logout() {
+            if (confirm('Deseja sair do sistema?')) {
+                alert('Sessão encerrada. Em um sistema real, redirecionaria para o login.');
+            }
+        }
+        
+        // Dashboard
+        function atualizarDashboard() {
+            const total = solicitacoes.length;
+            const pendentes = solicitacoes.filter(s => s.status === 'pendente').length;
+            const aprovadas = solicitacoes.filter(s => s.status === 'aprovado').length;
+            const recusadas = solicitacoes.filter(s => s.status === 'recusado').length;
+            
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statPendentes').textContent = pendentes;
+            document.getElementById('statAprovadas').textContent = aprovadas;
+            document.getElementById('statRecusadas').textContent = recusadas;
+            
+            const tbody = document.getElementById('dashboardBody');
+            tbody.innerHTML = '';
+            
+            const ultimas = [...solicitacoes].reverse().slice(0, 5);
+            ultimas.forEach(s => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.protocolo}</td>
+                        <td>${s.solicitante}</td>
+                        <td>${s.destino}</td>
+                        <td>R$ ${s.valorEstimado.toFixed(2)}</td>
+                        <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                        <td><button class="btn btn-outline" onclick="verDetalhes('${s.protocolo}')">Ver</button></td>
+                    </tr>
+                `;
+            });
+            
+            if (ultimas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma solicitação encontrada</td></tr>';
+            }
+        }
+        
+        function getStatusLabel(status) {
+            const labels = {
+                'pendente': 'Pendente',
+                'aprovado': 'Aprovado',
+                'recusado': 'Recusado',
+                'analise': 'Em Análise'
+            };
+            return labels[status] || status;
+        }
+        
+        // Formulário
+        function updateForm() {
+            const perfil = document.getElementById('perfil').value;
+            const motivo = document.getElementById('motivo').value;
+            const categoria = document.getElementById('categoria').value;
+            
+            // Atualizar teto
+            if (categoria) {
+                document.getElementById('tetoCategoria').value = tetos[categoria] || 0;
+            }
+            
+            // Atualizar antecedência mínima
+            if (motivo) {
+                document.getElementById('antecedenciaMinimaRegra') = antecedenciaMinima[motivo] || 60;
+            }
+            
+            // Calcular antecedência
+            const dataIda = document.getElementById('dataIda').value;
+            if (dataIda) {
+                const agora = new Date();
+                const ida = new Date(dataIda + 'T' + (document.getElementById('horario').value || '00:00'));
+                const diff = Math.floor((ida - agora) / 60000);
+                document.getElementById('antecedencia').value = diff > 0 ? diff : 0;
+            }
+        }
+        
+        function enviarSolicitacao() {
+            // Validar campos obrigatórios
+            const destino = document.getElementById('destino').value;
+            const motivo = document.getElementById('motivo').value;
+            const categoria = document.getElementById('categoria').value;
+            const valor = parseFloat(document.getElementById('valorEstimado').value);
+            const dataIda = document.getElementById('dataIda').value;
+            
+            if (!destino || !motivo || !categoria || !valor || !dataIda) {
+                alert('Preencha todos os campos obrigatórios!');
+                return;
+            }
+            
+            // Calcular antecedência
+            const agora = new Date();
+            const ida = new Date(dataIda + 'T' + (document.getElementById('horario').value || '00:00'));
+            const antecedencia = Math.max(0, Math.floor((ida - agora) / 60000));
+            
+            // Criar solicitação
+            const solicitacao = {
+                protocolo: String(proximoProtocolo++),
+                solicitante: currentUser.nome,
+                perfil: document.getElementById('perfil').value,
+                destino: destino,
+                motivo: motivo,
+                categoria: categoria,
+                valorEstimado: valor,
+                dataIda: dataIda,
+                dataVolta: document.getElementById('dataVolta').value,
+                horario: document.getElementById('horario').value,
+                antecedencia: antecedencia,
+                incluiResidencia: document.getElementById('incluiResidencia').checked,
+                coletivoAtende: document.getElementById('coletivoAtende').checked,
+                deslocamentoRecorrente: document.getElementById('deslocamentoRecorrente').checked,
+                observacoes: document.getElementById('observacoes').value,
+                status: '',
+                regraAplicada: 0,
+                quemAssina: '',
+                dataCriacao: agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}),
+                timeline: []
+            };
+            
+            // Executar motor de regras
+            const resultado = avaliarRegras(solicitacao);
+            
+            solicitacao.status = resultado.status;
+            solicitacao.regraAplicada = resultado.regra;
+            solicitacao.quemAssina = resultado.quemAssina;
+            solicitacao.timeline = [
+                { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo ' + solicitacao.protocolo + ' gerado', data: agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) }
+            ];
+            
+            if (resultado.status === 'aprovado') {
+                solicitacao.timeline.push({ tipo: 'approved', titulo: 'Aprovado automaticamente', descricao: resultado.descricao, data: agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) });
+            } else if (resultado.status === 'recusado') {
+                solicitacao.timeline.push({ tipo: 'rejected', titulo: 'Solicitação recusada', descricao: resultado.descricao, data: agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) });
+            } else {
+                solicitacao.timeline.push({ tipo: 'pending', titulo: 'Aguardando aprovação', descricao: resultado.descricao, data: agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) });
+            }
+            
+            solicitacoes.push(solicitacao);
+            salvarDados();
+            
+            alert('Solicitação ' + solicitacao.protocolo + ' criada com sucesso!\n\nStatus: ' + getStatusLabel(solicitacao.status) + '\n' + (solicitacao.quemAssina ? 'Quem assina: ' + solicitacao.quemAssina : ''));
+            
+            limparFormulario();
+            showPage('dashboard');
+            atualizarDashboard();
+        }
+        
+        function avaliarRegras(s) {
+            const teto = tetos[s.categoria] || 180;
+            const minima = antecedenciaMinima[s.motivo] || 60;
+            const ehEmergencia = s.motivo === 'emergencia';
+            const ehIrrestrito = s.perfil === 'irrestrito';
+            const ehLider = s.perfil === 'lider';
+            const ehStaff = s.perfil === 'staff';
+            const antecedenciaAbaixoMinimo = s.antecedencia < minima;
+            const valorExcedeTeto = s.valorEstimado > teto;
+            
+            // Regra 1: Emergência
+            if (ehEmergencia) {
+                return { status: 'aprovado', regra: 1, quemAssina: 'Sem aprovação (ciência)', descricao: 'Regra 1: Motivo emergencial' };
+            }
+            // Regra 2: Irrestrito
+            if (ehIrrestrito) {
+                return { status: 'aprovado', regra: 2, quemAssina: 'Sem aprovação (prerrogativa VP-2)', descricao: 'Regra 2: Perfil irrestrito' };
+            }
+            // Regra 3: Antecedência mínima
+            if (antecedenciaAbaixoMinimo) {
+                return { status: 'recusado', regra: 3, quemAssina: 'Solicitação recusada', descricao: 'Regra 3: Antecedência abaixo do mínimo (' + s.antecedencia + ' min < ' + minima + ' min)' };
+            }
+            // Regra 4: Teto do valor
+            if (valorExcedeTeto) {
+                return { status: 'pendente', regra: 4, quemAssina: 'VP-2', descricao: 'Regra 4: Valor excede o teto (R$ ' + s.valorEstimado + ' > R$ ' + teto + ')' };
+            }
+            // Regra 5: Coletivo
+            if (s.incluiResidencia && s.coletivoAtende) {
+                return { status: 'pendente', regra: 5, quemAssina: 'VP-2', descricao: 'Regra 5: Transporte coletivo disponível no trajeto' };
+            }
+            // Regra 6: Staff recorrente
+            if (ehStaff && s.deslocamentoRecorrente) {
+                return { status: 'pendente', regra: 6, quemAssina: 'VP-3 (lote mensal)', descricao: 'Regra 6: Staff em deslocamento recorrente' };
+            }
+            // Regra 7: Líder
+            if (ehLider) {
+                return { status: 'aprovado', regra: 7, quemAssina: 'Sem aprovação (autoaprovação)', descricao: 'Regra 7: Perfil líder' };
+            }
+            // Regra padrão
+            return { status: 'pendente', regra: 0, quemAssina: 'Líder direto do solicitante', descricao: 'Nenhuma regra atendida - desfecho padrão' };
+        }
+        
+        function limparFormulario() {
+            document.getElementById('destino').value = '';
+            document.getElementById('motivo').value = '';
+            document.getElementById('categoria').value = '';
+            document.getElementById('valorEstimado').value = '';
+            document.getElementById('dataIda').value = '';
+            document.getElementById('dataVolta').value = '';
+            document.getElementById('horario').value = '';
+            document.getElementById('antecedencia').value = '';
+            document.getElementById('tetoCategoria').value = '';
+            document.getElementById('incluiResidencia').checked = false;
+            document.getElementById('coletivoAtende').checked = false;
+            document.getElementById('deslocamentoRecorrente').checked = false;
+            document.getElementById('observacoes').value = '';
+        }
+        
+        // Minhas Solicitações
+        function atualizarMinhasSolicitacoes() {
+            const minhas = solicitacoes.filter(s => s.solicitante === currentUser.nome);
+            const tbody = document.getElementById('minhasSolicitacoesBody');
+            tbody.innerHTML = '';
+            
+            minhas.reverse().forEach(s => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.protocolo}</td>
+                        <td>${s.destino}</td>
+                        <td>${getMotivoLabel(s.motivo)}</td>
+                        <td>R$ ${s.valorEstimado.toFixed(2)}</td>
+                        <td>${formatDate(s.dataIda)}</td>
+                        <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                        <td>
+                            <button class="btn btn-outline" onclick="verDetalhes('${s.protocolo}')" style="padding: 5px 10px; font-size: 11px;">Ver</button>
+                            <button class="btn btn-outline" onclick="verTimeline('${s.protocolo}')" style="padding: 5px 10px; font-size: 11px;">Histórico</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            if (minhas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma solicitação encontrada</td></tr>';
+            }
+        }
+        
+        // Aprovações
+        function atualizarAprovacoes() {
+            const pendentes = solicitacoes.filter(s => s.status === 'pendente');
+            const tbody = document.getElementById('aprovacoesBody');
+            tbody.innerHTML = '';
+            
+            pendentes.forEach(s => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.protocolo}</td>
+                        <td>${s.solicitante}</td>
+                        <td>${getPerfilLabel(s.perfil)}</td>
+                        <td>${s.destino}</td>
+                        <td>R$ ${s.valorEstimado.toFixed(2)}</td>
+                        <td>Regra ${s.regraAplicada || 'Padrão'}</td>
+                        <td>
+                            <button class="btn btn-success" onclick="abrirModalAprovar('${s.protocolo}', 'aprovar')" style="padding: 5px 10px; font-size: 11px;">Aprovar</button>
+                            <button class="btn btn-danger" onclick="abrirModalAprovar('${s.protocolo}', 'recusar')" style="padding: 5px 10px; font-size: 11px;">Recusar</button>
+                            <button class="btn btn-outline" onclick="verDetalhes('${s.protocolo}')" style="padding: 5px 10px; font-size: 11px;">Ver</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            if (pendentes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma aprovação pendente</td></tr>';
+            }
+        }
+        
+        // Histórico
+        function atualizarHistorico() {
+            const tbody = document.getElementById('historicoBody');
+            tbody.innerHTML = '';
+            
+            [...solicitacoes].reverse().forEach(s => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${s.protocolo}</td>
+                        <td>${s.solicitante}</td>
+                        <td>${getPerfilLabel(s.perfil)}</td>
+                        <td>${s.destino}</td>
+                        <td>R$ ${s.valorEstimado.toFixed(2)}</td>
+                        <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                        <td>${s.dataCriacao}</td>
+                        <td>
+                            <button class="btn btn-outline" onclick="verDetalhes('${s.protocolo}')" style="padding: 5px 10px; font-size: 11px;">Ver</button>
+                            <button class="btn btn-outline" onclick="verTimeline('${s.protocolo}')" style="padding: 5px 10px; font-size: 11px;">Histórico</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        // Helpers
+        function getMotivoLabel(motivo) {
+            const labels = { reuniao: 'Reunião', capacitacao: 'Capacitação', obra: 'Obra', visita: 'Visita técnica', emergencia: 'Emergência', outro: 'Outro' };
+            return labels[motivo] || motivo;
+        }
+        
+        function getPerfilLabel(perfil) {
+            const labels = { geral: 'Geral', irrestrito: 'Irrestrito', lider: 'Líder', staff: 'Staff' };
+            return labels[perfil] || perfil;
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const [y, m, d] = dateStr.split('-');
+            return d + '/' + m + '/' + y;
+        }
+        
+        // Modais
+        function verDetalhes(protocolo) {
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (!s) return;
+            
+            const teto = tetos[s.categoria] || 180;
+            const minima = antecedenciaMinima[s.motivo] || 60;
+            
+            document.getElementById('detalhesContent').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Protocolo</div>
+                        <div class="detail-value">${s.protocolo}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value"><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Solicitante</div>
+                        <div class="detail-value">${s.solicitante}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Perfil</div>
+                        <div class="detail-value">${getPerfilLabel(s.perfil)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Destino</div>
+                        <div class="detail-value">${s.destino}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Motivo</div>
+                        <div class="detail-value">${getMotivoLabel(s.motivo)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Categoria</div>
+                        <div class="detail-value">${s.categoria.charAt(0).toUpperCase() + s.categoria.slice(1)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Valor Estimado</div>
+                        <div class="detail-value">R$ ${s.valorEstimado.toFixed(2)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Teto da Categoria</div>
+                        <div class="detail-value">R$ ${teto.toFixed(2)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Data Ida</div>
+                        <div class="detail-value">${formatDate(s.dataIda)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Data Volta</div>
+                        <div class="detail-value">${s.dataVolta ? formatDate(s.dataVolta) : '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Horário</div>
+                        <div class="detail-value">${s.horario || '-'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Antecedência</div>
+                        <div class="detail-value">${s.antecedencia} min (mínimo: ${minima} min)</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Trajeto inclui residência</div>
+                        <div class="detail-value">${s.incluiResidencia ? 'Sim' : 'Não'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Coletivo atende horário</div>
+                        <div class="detail-value">${s.coletivoAtende ? 'Sim' : 'Não'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Deslocamento recorrente</div>
+                        <div class="detail-value">${s.deslocamentoRecorrente ? 'Sim' : 'Não'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Regra Aplicada</div>
+                        <div class="detail-value">${s.regraAplicada ? 'Regra ' + s.regraAplicada : 'Padrão'}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Quem Assina</div>
+                        <div class="detail-value">${s.quemAssina}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Data de Criação</div>
+                        <div class="detail-value">${s.dataCriacao}</div>
+                    </div>
+                </div>
+                ${s.observacoes ? '<h3 style="margin-top: 15px;">Observações</h3><p style="padding: 10px; background: #f5f5f5; border-radius: 4px;">' + s.observacoes + '</p>' : ''}
+            `;
+            
+            openModal('modalDetalhes');
+        }
+        
+        function verTimeline(protocolo) {
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (!s) return;
+            
+            const content = document.getElementById('timelineContent');
+            content.innerHTML = '';
+            
+            s.timeline.forEach(t => {
+                content.innerHTML += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot ${t.tipo}">
+                            ${t.tipo === 'created' ? '📝' : t.tipo === 'pending' ? '⏳' : t.tipo === 'approved' ? '✅' : '❌'}
+                        </div>
+                        <div class="timeline-content">
+                            <div class="timeline-title">${t.titulo}</div>
+                            <div class="timeline-desc">${t.descricao}</div>
+                            <div class="timeline-time">${t.data}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            openModal('modalTimeline');
+        }
+        
+        let protocoloAtualAprovacao = '';
+        let acaoAtual = '';
+        
+        function abrirModalAprovar(protocolo, acao) {
+            protocoloAtualAprovacao = protocolo;
+            acaoAtual = acao;
+            
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            document.getElementById('modalAprovarText').innerHTML = `
+                <strong>Protocolo:</strong> ${protocolo}<br>
+                <strong>Solicitante:</strong> ${s.solicitante}<br>
+                <strong>Destino:</strong> ${s.destino}<br>
+                <strong>Valor:</strong> R$ ${s.valorEstimado.toFixed(2)}
+            `;
+            
+            openModal('modalAprovar');
+        }
+        
+        function aprovarSolicitacao() {
+            const s = solicitacoes.find(s => s.protocolo === protocoloAtualAprovacao);
+            if (s) {
+                const agora = new Date();
+                s.status = 'aprovado';
+                s.quemAssina = currentUser.nome;
+                s.timeline.push({
+                    tipo: 'approved',
+                    titulo: 'Aprovado por ' + currentUser.nome,
+                    descricao: document.getElementById('aprovacaoObservacao').value || 'Aprovado conforme política',
+                    data: agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})
+                });
+                salvarDados();
+                atualizarAprovacoes();
+                atualizarDashboard();
+                closeModal('modalAprovar');
+                alert('Solicitação aprovada com sucesso!');
+            }
+        }
+        
+        function recusarSolicitacao() {
+            const s = solicitacoes.find(s => s.protocolo === protocoloAtualAprovacao);
+            if (s) {
+                const obs = document.getElementById('aprovacaoObservacao').value;
+                if (!obs) {
+                    alert('Por favor, adicione um motivo para a recusa.');
+                    return;
+                }
+                const agora = new Date();
+                s.status = 'recusado';
+                s.quemAssina = currentUser.nome;
+                s.timeline.push({
+                    tipo: 'rejected',
+                    titulo: 'Recusado por ' + currentUser.nome,
+                    descricao: obs,
+                    data: agora.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})
+                });
+                salvarDados();
+                atualizarAprovacoes();
+                atualizarDashboard();
+                closeModal('modalAprovar');
+                alert('Solicitação recusada.');
+            }
+        }
+        
+        // Simulador de Régua
+        function simularRegra() {
+            const perfil = document.getElementById('simPerfil').value;
+            const motivo = document.getElementById('simMotivo').value;
+            const valor = parseFloat(document.getElementById('simValor').value);
+            const teto = parseFloat(document.getElementById('simTeto').value);
+            const antecedencia = parseInt(document.getElementById('simAntecedencia').value);
+            const antecedenciaMinima = parseInt(document.getElementById('simAntecedenciaMinima').value);
+            const residencia = document.getElementById('simResidencia').checked;
+            const coletivo = document.getElementById('simColetivo').checked;
+            const recorrente = document.getElementById('simRecorrente').checked;
+            
+            const s = {
+                perfil, motivo, valorEstimado: valor, antecedencia,
+                incluiResidencia: residencia, coletivoAtende: coletivo,
+                deslocamentoRecorrente: recorrente, categoria: 'economica'
+            };
+            
+            const resultado = avaliarRegras(s);
+            
+            let statusClass = resultado.status === 'aprovado' ? 'approved' : resultado.status === 'recusado' ? 'rejected' : 'pending';
+            let statusIcon = resultado.status === 'aprovado' ? '✅' : resultado.status === 'recusado' ? '❌' : '⚠️';
+            
+            document.getElementById('simResultado').style.display = 'block';
+            document.getElementById('simResultadoContent').innerHTML = `
+                <div style="padding: 15px; border-radius: 8px; background: ${statusClass === 'approved' ? '#e8f5e9' : statusClass === 'rejected' ? '#ffebee' : '#fff3e0'};">
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
+                        ${statusIcon} ${resultado.status === 'aprovado' ? 'APROVADO' : resultado.status === 'recusado' ? 'RECUSADO' : 'REQUER APROVAÇÃO'}
+                    </div>
+                    <p><strong>Regra aplicada:</strong> ${resultado.regra ? 'Regra ' + resultado.regra : 'Padrão'}</p>
+                    <p><strong>Descrição:</strong> ${resultado.descricao}</p>
+                    <p><strong>Quem assina:</strong> ${resultado.quemAssina}</p>
+                </div>
+                <div class="detail-grid" style="margin-top: 15px;">
+                    <div class="detail-item">
+                        <div class="detail-label">Perfil</div>
+                        <div class="detail-value">${getPerfilLabel(perfil)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Motivo</div>
+                        <div class="detail-value">${getMotivoLabel(motivo)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Valor vs Teto</div>
+                        <div class="detail-value">R$ ${valor.toFixed(2)} ${valor > teto ? '>' : '≤'} R$ ${teto.toFixed(2)}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Antecedência</div>
+                        <div class="detail-value">${antecedencia} min ${antecedencia < antecedenciaMinima ? '<' : '≥'} ${antecedenciaMinima} min</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Modals
+        function openModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+        
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+        
+        // Fechar modal clicando fora
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('show');
+                }
+            });
+        });
+        
+        // Inicializar
+        init();
+    </script>
+</body>
+</html>

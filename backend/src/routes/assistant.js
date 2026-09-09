@@ -337,6 +337,98 @@ function generateGeneralResponse(intent, message) {
   }
 }
 
+function generateSpendingSuggestions(data) {
+  let r = `📊 **Análise dos seus gastos (${data.cm}/${data.cy}):**\n\n`;
+
+  if (data.topCats.length === 0) {
+    return r + `Ainda não tenho dados de despesas suficientes para dar sugestões personalizadas. Registre seus gastos primeiro!`;
+  }
+
+  const total = data.topCats.reduce((s, c) => s + c.total, 0);
+  const topCat = data.topCats[0];
+  const topPct = total > 0 ? (topCat.total / total * 100).toFixed(0) : 0;
+
+  r += `**Maior gasto:** ${topCat.icon || ''} ${topCat.name} — ${formatCurrency(topCat.total)} (${topPct}% do total)\n\n`;
+
+  if (data.savingsRate < 10) {
+    r += `⚠️ **Sua taxa de economia está baixa (${data.savingsRate}%).**\n`;
+    r += `• Tente reduzir gastos na categoria "${topCat.name}"\n`;
+    r += `• Regra 50-30-20: 50% necessidades, 30% desejos, 20% economia\n`;
+    r += `• Automatize uma transferência para poupança no dia do salário\n\n`;
+  } else if (data.savingsRate < 20) {
+    r += `👍 **Sua taxa de economia é ${data.savingsRate}%.** Bom, mas pode melhorar!\n`;
+    r += `• Que tal aumentar para 20%? Seria ${formatCurrency(data.currIncome * 0.2)} por mês\n`;
+    r += `• Analise gastos em "${topCat.name}" para encontrar cortes\n\n`;
+  } else {
+    r += `✅ **Excelente! Você economiza ${data.savingsRate}% da renda.**\n`;
+    r += `• Continue assim e considere investir parte dessa reserva\n`;
+    r += `• Meta sugerida: Reserve ${formatCurrency(data.currIncome * 0.1)} mensais para investimentos\n\n`;
+  }
+
+  if (data.topCats.length >= 2) {
+    r += `**Outros grandes gastos:**\n`;
+    data.topCats.slice(1, 4).forEach(c => {
+      const pct = total > 0 ? (c.total / total * 100).toFixed(0) : 0;
+      r += `• ${c.icon || ''} ${c.name}: ${formatCurrency(c.total)} (${pct}%)\n`;
+    });
+  }
+
+  return r;
+}
+
+function generateSmartAlerts(data) {
+  let r = `🚨 **Alertas Inteligentes:**\n\n`;
+  let hasAlerts = false;
+
+  if (data.currExpenses > data.currIncome && data.currIncome > 0) {
+    r += `🔴 **Gastos maiores que receitas!** Você gastou ${formatCurrency(data.currExpenses)} e recebeu ${formatCurrency(data.currIncome)}. Diferença: ${formatCurrency(data.currExpenses - data.currIncome)}\n\n`;
+    hasAlerts = true;
+  }
+
+  if (data.expChange !== null && parseFloat(data.expChange) > 20) {
+    r += `📈 **Despesas aumentaram ${data.expChange}%** vs mês anterior. Verifique onde houve o aumento.\n\n`;
+    hasAlerts = true;
+  }
+
+  if (data.savingsRate < 0) {
+    r += `🚨 **Taxa de economia negativa!** Você está gastando mais do que ganha.\n\n`;
+    hasAlerts = true;
+  } else if (data.savingsRate < 10 && data.currIncome > 0) {
+    r += `⚠️ **Taxa de economia baixa (${data.savingsRate}%).** Recomendado: mínimo 20%.\n\n`;
+    hasAlerts = true;
+  }
+
+  if (data.topCats.length > 0) {
+    const total = data.topCats.reduce((s, c) => s + c.total, 0);
+    const topPct = total > 0 ? (data.topCats[0].total / total * 100) : 0;
+    if (topPct > 40) {
+      r += `📌 **Concentração de gastos:** ${data.topCats[0].name} representa ${topPct.toFixed(0)}% das despesas. Considere diversificar.\n\n`;
+      hasAlerts = true;
+    }
+  }
+
+  if (data.goalCount > 0 && data.goals.length > 0) {
+    const behindSchedule = data.goals.filter(g => {
+      const pct = g.target_amount > 0 ? (g.current_amount / g.target_amount * 100) : 0;
+      return pct < 50;
+    });
+    if (behindSchedule.length > 0) {
+      r += `🎯 **Metas abaixo do esperado:** ${behindSchedule.map(g => g.name).join(', ')}. Acelere os aportes!\n\n`;
+      hasAlerts = true;
+    }
+  }
+
+  if (!hasAlerts) {
+    r += `✅ **Tudo tranquilo!** Suas finanças estão saudáveis.\n`;
+    r += `• Receitas: ${formatCurrency(data.currIncome)}\n`;
+    r += `• Despesas: ${formatCurrency(data.currExpenses)}\n`;
+    r += `• Economia: ${data.savingsRate}%\n`;
+    r += `• Continue assim! 💪`;
+  }
+
+  return r;
+}
+
 function buildContextualResponse(message, history, data) {
   const lastBot = [...history].reverse().find(h => h.role === 'bot');
   const recentContext = history.slice(-6).map(h => h.text).join(' ').toLowerCase();
@@ -355,6 +447,14 @@ function buildContextualResponse(message, history, data) {
 
   if (/planej|planejar|organizar/i.test(message) && /dinheiro|finança|financeiro|mês|mensal/i.test(message)) {
     return `📋 **Planejamento financeiro mensal:**\n\n1. **Receita total:** ${formatCurrency(data.currIncome)}\n2. **Reserva (20%):** ${formatCurrency(data.currIncome * 0.2)}\n3. **Necessidades (50%):** ${formatCurrency(data.currIncome * 0.5)}\n4. **Desejos (30%):** ${formatCurrency(data.currIncome * 0.3)}\n\n**Seus gastos atuais:** ${formatCurrency(data.currExpenses)}\n**Economia atual:** ${data.savingsRate}%\n\nQuer que eu detalhe alguma dessas categorias?`;
+  }
+
+  if (/sugest|sugir|o que fazer|me ajuda|me ajude|analise|analisa|analizar|dica personalizada/i.test(message) && /gasto|despesa|dinheiro|finança|gastar|econom/i.test(message)) {
+    return generateSpendingSuggestions(data);
+  }
+
+  if (/alerta|alertas|aviso|avisos|preocup|preocupa|estou bem|está tudo ok|tudo ok/i.test(message)) {
+    return generateSmartAlerts(data);
   }
 
   return null;

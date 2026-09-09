@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Viagens v2.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
+        
+        /* Header */
+        .header { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: #fff; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .header-user { display: flex; align-items: center; gap: 20px; }
+        .role-selector { display: flex; gap: 5px; }
+        .role-btn { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+        .role-btn.active { background: #fff; color: #1a237e; }
+        .role-btn:hover { background: rgba(255,255,255,0.3); }
+        .role-btn.active:hover { background: #fff; }
+        
+        /* Layout */
+        .layout { display: flex; min-height: calc(100vh - 55px); }
+        
+        /* Sidebar */
+        .sidebar { width: 240px; background: #283593; color: #fff; padding: 20px 0; }
+        .sidebar-header { padding: 0 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; }
+        .sidebar-header h3 { font-size: 12px; opacity: 0.7; text-transform: uppercase; }
+        .sidebar-header p { font-size: 15px; font-weight: 600; }
+        .menu-item { padding: 12px 20px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-size: 13px; border-left: 3px solid transparent; }
+        .menu-item:hover { background: rgba(255,255,255,0.1); }
+        .menu-item.active { background: #1a237e; border-left-color: #fff; }
+        .menu-item .icon { width: 20px; text-align: center; }
+        .menu-item .badge { background: #f44336; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: auto; }
+        .menu-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 20px; }
+        
+        /* Main Content */
+        .main { flex: 1; padding: 25px; overflow-y: auto; }
+        
+        /* Pages */
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        /* Cards */
+        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .card-header h2 { font-size: 16px; color: #333; }
+        
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.08); border-left: 4px solid; }
+        .stat-card.blue { border-left-color: #1976d2; }
+        .stat-card.orange { border-left-color: #ff9800; }
+        .stat-card.green { border-left-color: #4caf50; }
+        .stat-card.red { border-left-color: #f44336; }
+        .stat-value { font-size: 24px; font-weight: bold; }
+        .stat-label { font-size: 11px; color: #666; margin-top: 5px; }
+        
+        /* Tables */
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table th { background: #f8f9fa; padding: 10px 8px; text-align: left; font-weight: 600; color: #555; border-bottom: 2px solid #dee2e6; font-size: 12px; }
+        .table td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .table tr:hover { background: #f8f9fa; }
+        
+        /* Status Badges */
+        .badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; display: inline-block; }
+        .badge.solicitada { background: #e3f2fd; color: #1565c0; }
+        .badge.aprovada { background: #e8f5e9; color: #2e7d32; }
+        .badge.recusada, .badge.cancelada { background: #ffebee; color: #c62828; }
+        .badge.pendente { background: #fff3e0; color: #e65100; }
+        .badge.aceita { background: #e8f5e9; color: #2e7d32; }
+        .badge.em_andamento { background: #e3f2fd; color: #1565c0; }
+        .badge.concluida { background: #e8f5e9; color: #2e7d32; }
+        .badge.indicado_horario { background: #fff3e0; color: #e65100; }
+        .badge.encaminhada { background: #f3e5f5; color: #7b1fa2; }
+        
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-group label { font-size: 12px; color: #555; margin-bottom: 5px; font-weight: 500; }
+        .form-group label .required { color: #c62828; }
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; transition: all 0.2s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: #1976d2; box-shadow: 0 0 0 2px rgba(25,118,210,0.1);
+        }
+        
+        /* Buttons */
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        .btn-primary { background: #1976d2; color: #fff; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn-danger { background: #c62828; color: #fff; }
+        .btn-warning { background: #ff9800; color: #fff; }
+        .btn-outline { background: #fff; border: 1px solid #ddd; color: #333; }
+        .btn-sm { padding: 5px 10px; font-size: 11px; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        
+        /* Rules Panel */
+        .rules-panel { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; }
+        .rule-item { display: flex; align-items: center; padding: 10px; margin-bottom: 6px; background: #fff; border-radius: 4px; border-left: 3px solid #ccc; }
+        .rule-item.active { border-left-color: #4caf50; background: #e8f5e9; }
+        .rule-item.reject { border-left-color: #f44336; background: #ffebee; }
+        .rule-item.approval { border-left-color: #ff9800; background: #fff3e0; }
+        .rule-number { width: 24px; height: 24px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; margin-right: 10px; flex-shrink: 0; }
+        .rule-item.active .rule-number { background: #4caf50; color: #fff; }
+        .rule-item.reject .rule-number { background: #f44336; color: #fff; }
+        .rule-item.approval .rule-number { background: #ff9800; color: #fff; }
+        .rule-info { flex: 1; }
+        .rule-name { font-weight: 600; font-size: 12px; color: #333; }
+        .rule-condition { font-size: 11px; color: #666; margin-top: 2px; }
+        
+        /* Timeline */
+        .timeline { padding: 10px 0; }
+        .timeline-item { display: flex; gap: 12px; padding: 8px 0; position: relative; }
+        .timeline-item:not(:last-child)::after { content: ''; position: absolute; left: 12px; top: 36px; bottom: 0; width: 2px; background: #e0e0e0; }
+        .timeline-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+        .timeline-dot.created { background: #e3f2fd; }
+        .timeline-dot.pending { background: #fff3e0; }
+        .timeline-dot.approved { background: #e8f5e9; }
+        .timeline-dot.rejected { background: #ffebee; }
+        .timeline-dot.driver { background: #f3e5f5; }
+        .timeline-dot.completed { background: #e8f5e9; }
+        .timeline-content { flex: 1; }
+        .timeline-title { font-weight: 600; font-size: 12px; color: #333; }
+        .timeline-desc { font-size: 11px; color: #666; margin-top: 2px; }
+        .timeline-time { font-size: 10px; color: #999; margin-top: 2px; }
+        
+        /* Detail Grid */
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .detail-item { padding: 10px; background: #f8f9fa; border-radius: 4px; }
+        .detail-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.3px; }
+        .detail-value { font-size: 13px; color: #333; font-weight: 500; margin-top: 3px; }
+        .detail-value.highlight { color: #1976d2; font-size: 15px; }
+        
+        /* Route Info */
+        .route-info { display: flex; align-items: center; gap: 15px; padding: 15px; background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); border-radius: 6px; margin: 15px 0; }
+        .route-point { flex: 1; text-align: center; }
+        .route-point .label { font-size: 10px; color: #666; text-transform: uppercase; }
+        .route-point .address { font-size: 12px; font-weight: 600; color: #333; margin-top: 3px; }
+        .route-arrow { font-size: 20px; color: #1976d2; }
+        .route-details { display: flex; justify-content: center; gap: 25px; margin-top: 10px; }
+        .route-detail { text-align: center; }
+        .route-detail .value { font-size: 16px; font-weight: bold; color: #1976d2; }
+        .route-detail .label { font-size: 10px; color: #666; }
+        
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 8px; width: 550px; max-height: 85vh; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
+        .modal-header h3 { font-size: 16px; color: #333; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .modal-body { padding: 20px; overflow-y: auto; max-height: calc(85vh - 130px); }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; background: #f8f9fa; }
+        
+        /* Mobile App Simulated */
+        .mobile-frame { width: 320px; height: 580px; background: #1a1a2e; border-radius: 30px; padding: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); margin: 0 auto; }
+        .mobile-screen { width: 100%; height: 100%; background: #fff; border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; }
+        .mobile-header { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #fff; padding: 15px; text-align: center; }
+        .mobile-header h4 { font-size: 14px; }
+        .mobile-header p { font-size: 11px; opacity: 0.8; margin-top: 3px; }
+        .mobile-body { flex: 1; padding: 15px; overflow-y: auto; background: #f5f5f5; }
+        .mobile-card { background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .mobile-card h5 { font-size: 12px; color: #333; margin-bottom: 8px; }
+        .mobile-info { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px solid #f0f0f0; }
+        .mobile-info:last-child { border-bottom: none; }
+        .mobile-info .label { color: #666; }
+        .mobile-info .value { font-weight: 600; color: #333; }
+        .mobile-btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .mobile-btn-primary { background: #1976d2; color: #fff; }
+        .mobile-btn-success { background: #2e7d32; color: #fff; }
+        .mobile-btn-danger { background: #c62828; color: #fff; }
+        .mobile-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .mobile-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; margin-bottom: 8px; }
+        .mobile-status { text-align: center; padding: 15px; font-size: 12px; color: #666; }
+        .mobile-trip-info { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: #fff; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .mobile-trip-info h5 { font-size: 11px; opacity: 0.8; margin-bottom: 5px; }
+        .mobile-trip-info p { font-size: 13px; font-weight: 600; }
+        
+        /* Trip Report */
+        .trip-report { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: #fff; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .trip-report h3 { margin-bottom: 12px; font-size: 14px; }
+        .report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .report-item { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 6px; text-align: center; }
+        .report-item .value { font-size: 18px; font-weight: bold; }
+        .report-item .label { font-size: 9px; opacity: 0.8; margin-top: 3px; }
+        
+        /* Empty State */
+        .empty-state { text-align: center; padding: 30px; color: #999; }
+        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+        
+        /* Toast */
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: #fff; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 2000; display: none; animation: slideIn 0.3s ease; }
+        .toast.show { display: block; }
+        .toast.success { background: #2e7d32; }
+        .toast.error { background: #c62828; }
+        .toast.info { background: #1565c0; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab { padding: 8px 15px; background: #f5f5f5; border: none; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+        .tab.active { background: #1976d2; color: #fff; }
+        .tab:hover:not(.active) { background: #e0e0e0; }
+        
+        /* User List */
+        .user-card { display: flex; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px; margin-bottom: 8px; }
+        .user-avatar { width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px; }
+        .user-avatar.motorista { background: #e3f2fd; }
+        .user-avatar.aprovador { background: #e8f5e9; }
+        .user-avatar.solicitante { background: #fff3e0; }
+        .user-avatar.passageiro { background: #f3e5f5; }
+        .user-info { flex: 1; }
+        .user-name { font-size: 13px; font-weight: 600; color: #333; }
+        .user-detail { font-size: 11px; color: #666; }
+        .user-actions { display: flex; gap: 5px; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>✈️ Sistema de Gestão de Viagens</h1>
+        <div class="header-user">
+            <div class="role-selector">
+                <button class="role-btn active" onclick="switchRole('solicitante')">👤 Solicitante</button>
+                <button class="role-btn" onclick="switchRole('aprovador')">✅ Aprovador</button>
+                <button class="role-btn" onclick="switchRole('programador')">📅 Programador</button>
+                <button class="role-btn" onclick="switchRole('motorista')">🚗 Motorista</button>
+                <button class="role-btn" onclick="switchRole('admin')">⚙️ Admin</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Logado como</h3>
+                <p id="currentUserName">João Silva</p>
+            </div>
+            
+            <!-- Menu Solicitante -->
+            <div id="menu-solicitante">
+                <div class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </div>
+                <div class="menu-item" onclick="showPage('nova-solicitacao')">
+                    <span class="icon">➕</span> Nova Solicitação
+                </div>
+                <div class="menu-item" onclick="showPage('minhas-solicitacoes')">
+                    <span class="icon">📋</span> Minhas Solicitações
+                    <span class="badge" id="badgeMinhas">0</span>
+                </div>
+            </div>
+            
+            <!-- Menu Aprovador -->
+            <div id="menu-aprovador" style="display: none;">
+                <div class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </div>
+                <div class="menu-item" onclick="showPage('aprovacoes')">
+                    <span class="icon">✅</span> Aprovações Pendentes
+                    <span class="badge" id="badgeAprovacoes">0</span>
+                </div>
+                <div class="menu-item" onclick="showPage('historico-aprovacoes')">
+                    <span class="icon">📜</span> Histórico
+                </div>
+            </div>
+            
+            <!-- Menu Programador -->
+            <div id="menu-programador" style="display: none;">
+                <div class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </div>
+                <div class="menu-item" onclick="showPage('programacoes')">
+                    <span class="icon">📅</span> Programações Pendentes
+                    <span class="badge" id="badgeProgramacoes">0</span>
+                </div>
+                <div class="menu-item" onclick="showPage('encaminhadas')">
+                    <span class="icon">🚗</span> Encaminhadas
+                </div>
+                <div class="menu-item" onclick="showPage('historico-programacoes')">
+                    <span class="icon">📜</span> Histórico
+                </div>
+            </div>
+            
+            <!-- Menu Motorista -->
+            <div id="menu-motorista" style="display: none;">
+                <div class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </div>
+                <div class="menu-item" onclick="showPage('app-motorista')">
+                    <span class="icon">📱</span> App do Motorista
+                </div>
+                <div class="menu-item" onclick="showPage('minhas-viagens')">
+                    <span class="icon">🛣️</span> Minhas Viagens
+                </div>
+            </div>
+            
+            <!-- Menu Admin -->
+            <div id="menu-admin" style="display: none;">
+                <div class="menu-item active" onclick="showPage('dashboard')">
+                    <span class="icon">📊</span> Dashboard
+                </div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" onclick="showPage('cadastro-motoristas')">
+                    <span class="icon">🚗</span> Motoristas
+                    <span class="badge" id="badgeMotoristas">0</span>
+                </div>
+                <div class="menu-item" onclick="showPage('cadastro-aprovadores')">
+                    <span class="icon">✅</span> Aprovadores
+                    <span class="badge" id="badgeAprovadores">0</span>
+                </div>
+                <div class="menu-item" onclick="showPage('cadastro-solicitantes')">
+                    <span class="icon">👤</span> Solicitantes
+                    <span class="badge" id="badgeSolicitantes">0</span>
+                </div>
+                <div class="menu-item" onclick="showPage('cadastro-passageiros')">
+                    <span class="icon">🧑</span> Passageiros
+                    <span class="badge" id="badgePassageiros">0</span>
+                </div>
+            </div>
+            
+            <!-- Menu Comum -->
+            <div class="menu-divider"></div>
+            <div class="menu-item" onclick="showPage('regua-decisao')">
+                <span class="icon">⚖️</span> Régua de Decisão
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main">
+            
+            <!-- PAGE: Dashboard -->
+            <div class="page active" id="page-dashboard">
+                <h2 style="margin-bottom: 15px;">Dashboard</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-value" id="statTotal">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-value" id="statPendentes">0</div>
+                        <div class="stat-label">Pendentes</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-value" id="statAprovadas">0</div>
+                        <div class="stat-label">Aprovadas</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-value" id="statRecusadas">0</div>
+                        <div class="stat-label">Recusadas</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Últimas Solicitações</h2>
+                    </div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Solicitante</th>
+                                <th>Destino</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Nova Solicitação -->
+            <div class="page" id="page-nova-solicitacao">
+                <h2 style="margin-bottom: 15px;">Nova Solicitação de Viagem</h2>
+                
+                <div class="card">
+                    <form id="formSolicitacao" onsubmit="return false;">
+                        <h3 style="margin-bottom: 12px; color: #555; font-size: 14px;">Dados da Solicitação</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Empresa Solicitante <span class="required">*</span></label>
+                                <select id="empresaSolicitante">
+                                    <option value="">Selecione...</option>
+                                    <option value="Empresa A - Matriz">Empresa A - Matriz</option>
+                                    <option value="Empresa B - Filial">Empresa B - Filial</option>
+                                    <option value="Empresa C - Regional">Empresa C - Regional</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Empresa de Transporte <span class="required">*</span></label>
+                                <select id="empresaTransporte">
+                                    <option value="">Selecione...</option>
+                                    <option value="TransPort Express">TransPort Express</option>
+                                    <option value="Viação Rápida">Viação Rápida</option>
+                                    <option value="Super Transportes">Super Transportes</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Motivo da Solicitação <span class="required">*</span></label>
+                                <select id="motivo" onchange="atualizarMotorRegras()">
+                                    <option value="">Selecione...</option>
+                                    <option value="reuniao">Reunião</option>
+                                    <option value="capacitacao">Capacitação</option>
+                                    <option value="obra">Obra</option>
+                                    <option value="visita">Visita técnica</option>
+                                    <option value="emergencia">Emergência</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Perfil do Solicitante</label>
+                                <select id="perfil" onchange="atualizarMotorRegras()">
+                                    <option value="geral">Geral</option>
+                                    <option value="irrestrito">Irrestrito (VP-2)</option>
+                                    <option value="lider">Líder</option>
+                                    <option value="staff">Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin: 15px 0 12px; color: #555; font-size: 14px;">Dados do Passageiro</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome Completo <span class="required">*</span></label>
+                                <select id="passageiroSelect" onchange="preencherPassageiro()">
+                                    <option value="">Selecione ou cadastre novo...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>CPF</label>
+                                <input type="text" id="cpfPassageiro" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>E-mail</label>
+                                <input type="email" id="emailPassageiro" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone</label>
+                                <input type="tel" id="telefonePassageiro" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Centro de Custo</label>
+                                <input type="text" id="centroCusto" readonly>
+                            </div>
+                        </div>
+                        
+                        <h3 style="margin: 15px 0 12px; color: #555; font-size: 14px;">Dados da Viagem</h3>
+                        <div class="form-grid">
+                            <div class="form-group full">
+                                <label>Endereço de Origem <span class="required">*</span></label>
+                                <input type="text" id="enderecoOrigem" placeholder="Rua, Número, Bairro, Cidade - UF" onblur="calcularRota()">
+                            </div>
+                            <div class="form-group full">
+                                <label>Endereço de Destino <span class="required">*</span></label>
+                                <input type="text" id="enderecoDestino" placeholder="Rua, Número, Bairro, Cidade - UF" onblur="calcularRota()">
+                            </div>
+                            <div class="form-group">
+                                <label>Data da Viagem <span class="required">*</span></label>
+                                <input type="date" id="dataViagem">
+                            </div>
+                            <div class="form-group">
+                                <label>Horário pretendido</label>
+                                <input type="time" id="horarioViagem">
+                            </div>
+                        </div>
+                        
+                        <div id="rotaCalculada" style="display: none;">
+                            <div class="route-info">
+                                <div class="route-point">
+                                    <div class="label">Origem</div>
+                                    <div class="address" id="rotaOrigem">-</div>
+                                </div>
+                                <div class="route-arrow">➡️</div>
+                                <div class="route-point">
+                                    <div class="label">Destino</div>
+                                    <div class="address" id="rotaDestino">-</div>
+                                </div>
+                            </div>
+                            <div class="route-details">
+                                <div class="route-detail">
+                                    <div class="value" id="rotaKm">0 km</div>
+                                    <div class="label">Distância</div>
+                                </div>
+                                <div class="route-detail">
+                                    <div class="value" id="rotaTempo">0 min</div>
+                                    <div class="label">Tempo estimado</div>
+                                </div>
+                                <div class="route-detail">
+                                    <div class="value" id="rotaValor">R$ 0,00</div>
+                                    <div class="label">Valor estimado</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="painelMotorRegras" style="display: none;">
+                            <h3 style="margin: 15px 0 12px; color: #555; font-size: 14px;">⚙️ Motor de Regras</h3>
+                            <div class="rules-panel" id="regrasAplicadas"></div>
+                            <div id="resultadoRegra" style="margin-top: 10px;"></div>
+                        </div>
+                        
+                        <div class="btn-group" style="margin-top: 15px;">
+                            <button type="button" class="btn btn-primary" onclick="enviarSolicitacao()">📤 Enviar Solicitação</button>
+                            <button type="button" class="btn btn-outline" onclick="limparFormulario()">🗑️ Limpar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- PAGE: Minhas Solicitações -->
+            <div class="page" id="page-minhas-solicitacoes">
+                <h2 style="margin-bottom: 15px;">Minhas Solicitações</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Destino</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Atualização</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="minhasSolicitacoesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Aprovações -->
+            <div class="page" id="page-aprovacoes">
+                <h2 style="margin-bottom: 15px;">Aprovações Pendentes</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Solicitante</th>
+                                <th>Destino</th>
+                                <th>Valor</th>
+                                <th>Motivo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aprovacoesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Histórico Aprovações -->
+            <div class="page" id="page-historico-aprovacoes">
+                <h2 style="margin-bottom: 15px;">Histórico de Aprovações</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Solicitante</th>
+                                <th>Destino</th>
+                                <th>Decisão</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historicoAprovacoesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Programações -->
+            <div class="page" id="page-programacoes">
+                <h2 style="margin-bottom: 15px;">Programações Pendentes</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Passageiro</th>
+                                <th>Destino</th>
+                                <th>Data/Hora</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="programacoesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Encaminhadas -->
+            <div class="page" id="page-encaminhadas">
+                <h2 style="margin-bottom: 15px;">Encaminhadas ao Motorista</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Passageiro</th>
+                                <th>Destino</th>
+                                <th>Data</th>
+                                <th>Motorista</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="encaminhadasBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Histórico Programações -->
+            <div class="page" id="page-historico-programacoes">
+                <h2 style="margin-bottom: 15px;">Histórico</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Passageiro</th>
+                                <th>Decisão</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historicoProgramacoesBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: App Motorista -->
+            <div class="page" id="page-app-motorista">
+                <h2 style="margin-bottom: 15px;">📱 App do Motorista</h2>
+                <div id="appMotoristaContent"></div>
+            </div>
+            
+            <!-- PAGE: Minhas Viagens -->
+            <div class="page" id="page-minhas-viagens">
+                <h2 style="margin-bottom: 15px;">Minhas Viagens</h2>
+                <div class="card">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Protocolo</th>
+                                <th>Passageiro</th>
+                                <th>Destino</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="minhasViagensBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- PAGE: Cadastro Motoristas -->
+            <div class="page" id="page-cadastro-motoristas">
+                <h2 style="margin-bottom: 15px;">🚗 Cadastro de Motoristas</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Novo Motorista</h2>
+                    </div>
+                    <form id="formMotorista" onsubmit="return false;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome Completo <span class="required">*</span></label>
+                                <input type="text" id="motoristaNome" placeholder="Nome do motorista">
+                            </div>
+                            <div class="form-group">
+                                <label>CPF <span class="required">*</span></label>
+                                <input type="text" id="motoristaCpf" placeholder="000.000.000-00">
+                            </div>
+                            <div class="form-group">
+                                <label>CNH <span class="required">*</span></label>
+                                <input type="text" id="motoristaCnh" placeholder="Número da CNH">
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone <span class="required">*</span></label>
+                                <input type="tel" id="motoristaTelefone" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="form-group">
+                                <label>E-mail</label>
+                                <input type="email" id="motoristaEmail" placeholder="email@empresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Empresa de Transporte <span class="required">*</span></label>
+                                <select id="motoristaEmpresa">
+                                    <option value="">Selecione...</option>
+                                    <option value="TransPort Express">TransPort Express</option>
+                                    <option value="Viação Rápida">Viação Rápida</option>
+                                    <option value="Super Transportes">Super Transportes</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary" onclick="cadastrarMotorista()">💾 Cadastrar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Motoristas Cadastrados</h2>
+                    </div>
+                    <div id="listaMotoristas"></div>
+                </div>
+            </div>
+            
+            <!-- PAGE: Cadastro Aprovadores -->
+            <div class="page" id="page-cadastro-aprovadores">
+                <h2 style="margin-bottom: 15px;">✅ Cadastro de Aprovadores</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Novo Aprovador</h2>
+                    </div>
+                    <form id="formAprovador" onsubmit="return false;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome Completo <span class="required">*</span></label>
+                                <input type="text" id="aprovadorNome" placeholder="Nome do aprovador">
+                            </div>
+                            <div class="form-group">
+                                <label>E-mail <span class="required">*</span></label>
+                                <input type="email" id="aprovadorEmail" placeholder="email@empresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Cargo <span class="required">*</span></label>
+                                <select id="aprovadorCargo">
+                                    <option value="">Selecione...</option>
+                                    <option value="Líder">Líder</option>
+                                    <option value="VP-2">VP-2</option>
+                                    <option value="VP-3">VP-3</option>
+                                    <option value="Gerente">Gerente</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone</label>
+                                <input type="tel" id="aprovadorTelefone" placeholder="(00) 00000-0000">
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary" onclick="cadastrarAprovador()">💾 Cadastrar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Aprovadores Cadastrados</h2>
+                    </div>
+                    <div id="listaAprovadores"></div>
+                </div>
+            </div>
+            
+            <!-- PAGE: Cadastro Solicitantes -->
+            <div class="page" id="page-cadastro-solicitantes">
+                <h2 style="margin-bottom: 15px;">👤 Cadastro de Solicitantes</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Novo Solicitante</h2>
+                    </div>
+                    <form id="formSolicitante" onsubmit="return false;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome Completo <span class="required">*</span></label>
+                                <input type="text" id="solicitanteNome" placeholder="Nome do solicitante">
+                            </div>
+                            <div class="form-group">
+                                <label>E-mail <span class="required">*</span></label>
+                                <input type="email" id="solicitanteEmail" placeholder="email@empresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Departamento <span class="required">*</span></label>
+                                <input type="text" id="solicitanteDepto" placeholder="Departamento">
+                            </div>
+                            <div class="form-group">
+                                <label>Perfil</label>
+                                <select id="solicitantePerfil">
+                                    <option value="geral">Geral</option>
+                                    <option value="irrestrito">Irrestrito</option>
+                                    <option value="lider">Líder</option>
+                                    <option value="staff">Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary" onclick="cadastrarSolicitante()">💾 Cadastrar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Solicitantes Cadastrados</h2>
+                    </div>
+                    <div id="listaSolicitantes"></div>
+                </div>
+            </div>
+            
+            <!-- PAGE: Cadastro Passageiros -->
+            <div class="page" id="page-cadastro-passageiros">
+                <h2 style="margin-bottom: 15px;">🧑 Cadastro de Passageiros</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Novo Passageiro</h2>
+                    </div>
+                    <form id="formPassageiro" onsubmit="return false;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nome Completo <span class="required">*</span></label>
+                                <input type="text" id="passageiroNome" placeholder="Nome do passageiro">
+                            </div>
+                            <div class="form-group">
+                                <label>CPF <span class="required">*</span></label>
+                                <input type="text" id="passageiroCpf" placeholder="000.000.000-00">
+                            </div>
+                            <div class="form-group">
+                                <label>E-mail <span class="required">*</span></label>
+                                <input type="email" id="passageiroEmail" placeholder="email@empresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone <span class="required">*</span></label>
+                                <input type="tel" id="passageiroTelefone" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="form-group">
+                                <label>Centro de Custo <span class="required">*</span></label>
+                                <input type="text" id="passageiroCentroCusto" placeholder="CC-000">
+                            </div>
+                            <div class="form-group">
+                                <label>Empresa</label>
+                                <select id="passageiroEmpresa">
+                                    <option value="">Selecione...</option>
+                                    <option value="Empresa A - Matriz">Empresa A - Matriz</option>
+                                    <option value="Empresa B - Filial">Empresa B - Filial</option>
+                                    <option value="Empresa C - Regional">Empresa C - Regional</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary" onclick="cadastrarPassageiro()">💾 Cadastrar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Passageiros Cadastrados</h2>
+                    </div>
+                    <div id="listaPassageiros"></div>
+                </div>
+            </div>
+            
+            <!-- PAGE: Régua de Decisão -->
+            <div class="page" id="page-regua-decisao">
+                <h2 style="margin-bottom: 15px;">Régua de Decisão</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Regras Configuradas</h2>
+                    </div>
+                    <div class="rules-panel">
+                        <div class="rule-item">
+                            <div class="rule-number">1</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Emergência</div>
+                                <div class="rule-condition">Motivo emergencial → Aprovação automática</div>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">2</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Perfil Irrestrito</div>
+                                <div class="rule-condition">Perfil VP-2 → Aprovação automática</div>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">3</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Antecedência mínima</div>
+                                <div class="rule-condition">Abaixo do mínimo → Recusa</div>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">4</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Valor excede teto</div>
+                                <div class="rule-condition">Acima do teto → Aprovação VP-2</div>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">5</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Coletivo disponível</div>
+                                <div class="rule-condition">Residência + Coletivo → Aprovação VP-2</div>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">6</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Staff recorrente</div>
+                                <div class="rule-condition">Staff + Recorrente → Aprovação VP-3</div>
+                            </div>
+                        </div>
+                        <div class="rule-item">
+                            <div class="rule-number">7</div>
+                            <div class="rule-info">
+                                <div class="rule-name">Perfil Líder</div>
+                                <div class="rule-condition">Líder → Autoaprovação</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 12px; background: #f5f5f5; border-radius: 6px; font-size: 13px;">
+                        <strong>Regra Padrão:</strong> Nenhuma regra atendida → Aprovação do líder direto
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Modal Detalhes -->
+    <div class="modal-overlay" id="modalDetalhes">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📋 Detalhes da Solicitação</h3>
+                <button class="modal-close" onclick="closeModal('modalDetalhes')">&times;</button>
+            </div>
+            <div class="modal-body" id="detalhesContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalDetalhes')">Fechar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Aprovar -->
+    <div class="modal-overlay" id="modalAprovar">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>✅ Aprovar/Recusar</h3>
+                <button class="modal-close" onclick="closeModal('modalAprovar')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalAprovarInfo"></div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label>Observações <span class="required">*</span></label>
+                    <textarea id="aprovacaoObservacao" rows="3" placeholder="Observações..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="recusarSolicitacao()">❌ Recusar</button>
+                <button class="btn btn-success" onclick="aprovarSolicitacao()">✅ Aprovar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Programar -->
+    <div class="modal-overlay" id="modalProgramar">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📅 Programar Viagem</h3>
+                <button class="modal-close" onclick="closeModal('modalProgramar')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalProgramarInfo"></div>
+                
+                <div class="tabs" style="margin-top: 15px;">
+                    <button class="tab active" onclick="showTab('aceitar', this)">Aceitar Programação</button>
+                    <button class="tab" onclick="showTab('indicar', this)">Indicar Novo Horário</button>
+                    <button class="tab" onclick="showTab('recusar', this)">Recusar</button>
+                </div>
+                
+                <div id="tab-aceitar" class="tab-content">
+                    <div class="form-group">
+                        <label>Selecionar Motorista <span class="required">*</span></label>
+                        <select id="motoristaSelect"></select>
+                    </div>
+                    <button class="btn btn-success" onclick="programarViagem('aceitar')">✅ Aceitar e Encaminhar</button>
+                </div>
+                
+                <div id="tab-indicar" class="tab-content" style="display: none;">
+                    <div class="form-group">
+                        <label>Novo Horário Sugerido <span class="required">*</span></label>
+                        <input type="datetime-local" id="novoHorario">
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo da Alteração</label>
+                        <textarea id="motivoAlteracao" rows="2" placeholder="Motivo..."></textarea>
+                    </div>
+                    <button class="btn btn-warning" onclick="programarViagem('indicar_horario')">⏰ Indicar Horário</button>
+                </div>
+                
+                <div id="tab-recusar" class="tab-content" style="display: none;">
+                    <div class="form-group">
+                        <label>Motivo da Recusa <span class="required">*</span></label>
+                        <textarea id="motivoRecusa" rows="3" placeholder="Motivo da recusa..."></textarea>
+                    </div>
+                    <button class="btn btn-danger" onclick="programarViagem('recusar')">❌ Recusar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Timeline -->
+    <div class="modal-overlay" id="modalTimeline">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📜 Histórico</h3>
+                <button class="modal-close" onclick="closeModal('modalTimeline')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="timelineContent" class="timeline"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalTimeline')">Fechar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== DADOS ====================
+        let currentRole = 'solicitante';
+        let currentUser = { nome: 'João Silva' };
+        let solicitacoes = [];
+        let motoristas = [];
+        let aprovadores = [];
+        let solicitantes = [];
+        let passageiros = [];
+        let proximoProtocolo = 3001;
+        let protocoloAtual = '';
+        
+        // ==================== INICIALIZAÇÃO ====================
+        function init() {
+            // Carregar dados ou criar exemplos
+            const dados = localStorage.getItem('sistema_viagens_v2');
+            if (dados) {
+                const d = JSON.parse(dados);
+                solicitacoes = d.solicitacoes || [];
+                motoristas = d.motoristas || [];
+                aprovadores = d.aprovadores || [];
+                solicitantes = d.solicitantes || [];
+                passageiros = d.passageiros || [];
+                proximoProtocolo = d.proximoProtocolo || 3001;
+            } else {
+                criarDadosExemplo();
+            }
+            atualizarDashboard();
+            atualizarBadges();
+            atualizarSelects();
+        }
+        
+        function criarDadosExemplo() {
+            motoristas = [
+                { id: 'm1', nome: 'Carlos Alberto', cpf: '111.222.333-44', cnh: '12345678900', telefone: '(11) 99999-1111', email: 'carlos@transport.com', empresa: 'TransPort Express' },
+                { id: 'm2', nome: 'José da Silva', cpf: '222.333.444-55', cnh: '98765432100', telefone: '(11) 99999-2222', email: 'jose@transport.com', empresa: 'TransPort Express' },
+                { id: 'm3', nome: 'Maria Oliveira', cpf: '333.444.555-66', cnh: '45678912300', telefone: '(11) 99999-3333', email: 'maria@transport.com', empresa: 'Viação Rápida' }
+            ];
+            
+            aprovadores = [
+                { id: 'a1', nome: 'Roberto Alves', email: 'roberto@empresa.com', cargo: 'VP-2', telefone: '(11) 88888-1111' },
+                { id: 'a2', nome: 'Fernanda Lima', email: 'fernanda@empresa.com', cargo: 'Gerente', telefone: '(11) 88888-2222' }
+            ];
+            
+            solicitantes = [
+                { id: 's1', nome: 'João Silva', email: 'joao@empresa.com', depto: 'TI', perfil: 'geral' },
+                { id: 's2', nome: 'Maria Santos', email: 'maria@empresa.com', depto: 'RH', perfil: 'irrestrito' }
+            ];
+            
+            passageiros = [
+                { id: 'p1', nome: 'Pedro Costa', cpf: '123.456.789-00', email: 'pedro@empresa.com', telefone: '(11) 77777-1111', centroCusto: 'CC-001', empresa: 'Empresa A - Matriz' },
+                { id: 'p2', nome: 'Ana Paula', cpf: '987.654.321-00', email: 'ana@empresa.com', telefone: '(11) 77777-2222', centroCusto: 'CC-002', empresa: 'Empresa B - Filial' }
+            ];
+            
+            solicitacoes = [
+                {
+                    protocolo: '3001',
+                    empresaSolicitante: 'Empresa A - Matriz',
+                    empresaTransporte: 'TransPort Express',
+                    solicitante: 'João Silva',
+                    passageiro: passageiros[0],
+                    enderecoOrigem: 'Av. Paulista, 1000 - São Paulo, SP',
+                    enderecoDestino: 'Rua Augusta, 500 - São Paulo, SP',
+                    dataViagem: '2026-09-01',
+                    horarioViagem: '14:00',
+                    km: 8.5,
+                    tempoEstimado: 25,
+                    valorEstimado: 45.00,
+                    motivo: 'reuniao',
+                    status: 'solicitada',
+                    regraAplicada: 0,
+                    quemAssina: 'Líder direto',
+                    motorista: null,
+                    motoristaId: null,
+                    kmInicial: null,
+                    kmEmbarque: null,
+                    kmDesembarque: null,
+                    dataCriacao: '25/08 10:30',
+                    timeline: [{ tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 3001 gerado', data: '25/08 10:30' }]
+                },
+                {
+                    protocolo: '3002',
+                    empresaSolicitante: 'Empresa B - Filial',
+                    empresaTransporte: 'Viação Rápida',
+                    solicitante: 'Maria Santos',
+                    passageiro: passageiros[1],
+                    enderecoOrigem: 'Rua Augusta, 2000 - São Paulo, SP',
+                    enderecoDestino: 'Av. Brasil, 100 - Rio de Janeiro, RJ',
+                    dataViagem: '2026-09-05',
+                    horarioViagem: '08:00',
+                    km: 430,
+                    tempoEstimado: 360,
+                    valorEstimado: 850.00,
+                    motivo: 'capacitacao',
+                    status: 'aprovada',
+                    regraAplicada: 4,
+                    quemAssina: 'VP-2',
+                    aprovador: 'Roberto Alves',
+                    dataAprovacao: '26/08 09:15',
+                    motorista: null,
+                    motoristaId: null,
+                    kmInicial: null,
+                    kmEmbarque: null,
+                    kmDesembarque: null,
+                    dataCriacao: '25/08 14:20',
+                    timeline: [
+                        { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 3002 gerado', data: '25/08 14:20' },
+                        { tipo: 'pending', titulo: 'Aguardando aprovação', descricao: 'Regra 4: Valor excede teto - VP-2', data: '25/08 14:20' },
+                        { tipo: 'approved', titulo: 'Aprovado por Roberto Alves', descricao: 'Aprovado conforme política', data: '26/08 09:15' }
+                    ]
+                },
+                {
+                    protocolo: '3003',
+                    empresaSolicitante: 'Empresa A - Matriz',
+                    empresaTransporte: 'TransPort Express',
+                    solicitante: 'João Silva',
+                    passageiro: passageiros[0],
+                    enderecoOrigem: 'Rua das Flores, 100 - Porto Alegre, RS',
+                    enderecoDestino: 'Av. Beira Mar, 200 - Florianópolis, SC',
+                    dataViagem: '2026-09-10',
+                    horarioViagem: '06:00',
+                    km: 110,
+                    tempoEstimado: 90,
+                    valorEstimado: 280.00,
+                    motivo: 'obra',
+                    status: 'encaminhada',
+                    regraAplicada: 0,
+                    quemAssina: 'Líder direto',
+                    programador: 'Fernanda Lima',
+                    dataProgramacao: '27/08 11:00',
+                    motorista: 'Carlos Alberto',
+                    motoristaId: 'm1',
+                    kmInicial: null,
+                    kmEmbarque: null,
+                    kmDesembarque: null,
+                    dataCriacao: '26/08 16:40',
+                    timeline: [
+                        { tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo 3003 gerado', data: '26/08 16:40' },
+                        { tipo: 'pending', titulo: 'Aguardando aprovação', descricao: 'Regra padrão - Líder direto', data: '26/08 16:40' },
+                        { tipo: 'approved', titulo: 'Aprovado', descricao: 'Aprovado automaticamente', data: '26/08 17:00' },
+                        { tipo: 'approved', titulo: 'Programação aceita', descricao: 'Aceito por Fernanda Lima', data: '27/08 11:00' },
+                        { tipo: 'driver', titulo: 'Encaminhado', descricao: 'Carlos Alberto - TransPort Express', data: '27/08 11:05' }
+                    ]
+                }
+            ];
+            proximoProtocolo = 3004;
+            salvarDados();
+        }
+        
+        function salvarDados() {
+            localStorage.setItem('sistema_viagens_v2', JSON.stringify({
+                solicitacoes, motoristas, aprovadores, solicitantes, passageiros, proximoProtocolo
+            }));
+        }
+        
+        // ==================== NAVEGAÇÃO ====================
+        function switchRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            const menus = ['solicitante', 'aprovador', 'programador', 'motorista', 'admin'];
+            menus.forEach(m => {
+                document.getElementById('menu-' + m).style.display = m === role ? 'block' : 'none';
+            });
+            
+            const nomes = { solicitante: 'João Silva', aprovador: 'Roberto Alves', programador: 'Fernanda Lima', motorista: 'Carlos Alberto', admin: 'Administrador' };
+            currentUser = { nome: nomes[role] };
+            document.getElementById('currentUserName').textContent = currentUser.nome;
+            
+            showPage('dashboard');
+            atualizarDashboard();
+            atualizarBadges();
+            
+            if (role === 'admin') {
+                listarMotoristas();
+                listarAprovadores();
+                listarSolicitantes();
+                listarPassageiros();
+            }
+            if (role === 'motorista') {
+                renderAppMotorista();
+            }
+        }
+        
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            
+            const pageEl = document.getElementById('page-' + page);
+            if (pageEl) pageEl.classList.add('active');
+            if (event && event.currentTarget) event.currentTarget.classList.add('active');
+            
+            const actions = {
+                'minhas-solicitacoes': atualizarMinhasSolicitacoes,
+                'aprovacoes': atualizarAprovacoes,
+                'historico-aprovacoes': atualizarHistoricoAprovacoes,
+                'programacoes': atualizarProgramacoes,
+                'encaminhadas': atualizarEncaminhadas,
+                'historico-programacoes': atualizarHistoricoProgramacoes,
+                'app-motorista': renderAppMotorista,
+                'minhas-viagens': atualizarMinhasViagens,
+                'cadastro-motoristas': listarMotoristas,
+                'cadastro-aprovadores': listarAprovadores,
+                'cadastro-solicitantes': listarSolicitantes,
+                'cadastro-passageiros': listarPassageiros
+            };
+            if (actions[page]) actions[page]();
+        }
+        
+        function showTab(tab, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).style.display = 'block';
+            btn.classList.add('active');
+        }
+        
+        // ==================== DASHBOARD ====================
+        function atualizarDashboard() {
+            let filtradas = solicitacoes;
+            if (currentRole === 'solicitante') filtradas = solicitacoes.filter(s => s.solicitante === currentUser.nome);
+            if (currentRole === 'motorista') filtradas = solicitacoes.filter(s => s.motoristaId === 'm1');
+            
+            document.getElementById('statTotal').textContent = filtradas.length;
+            document.getElementById('statPendentes').textContent = filtradas.filter(s => ['solicitada', 'pendente'].includes(s.status)).length;
+            document.getElementById('statAprovadas').textContent = filtradas.filter(s => ['aprovada', 'aceita', 'encaminhada', 'em_andamento', 'concluida'].includes(s.status)).length;
+            document.getElementById('statRecusadas').textContent = filtradas.filter(s => ['recusada', 'cancelada'].includes(s.status)).length;
+            
+            const tbody = document.getElementById('dashboardBody');
+            tbody.innerHTML = '';
+            [...filtradas].reverse().slice(0, 5).forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.solicitante}</td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0, 25) + '...' : '-'}</td>
+                    <td>R$ ${s.valorEstimado ? s.valorEstimado.toFixed(2) : '0,00'}</td>
+                    <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                    <td><button class="btn btn-sm btn-outline" onclick="verDetalhes('${s.protocolo}')">Ver</button></td>
+                </tr>`;
+            });
+            if (filtradas.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma solicitação</td></tr>';
+        }
+        
+        function getStatusLabel(s) {
+            const l = { solicitada: 'Solicitada', pendente: 'Pendente', aprovada: 'Aprovada', recusada: 'Recusada', cancelada: 'Cancelada', aceita: 'Aceita', indicado_horario: 'Horário Indicado', encaminhada: 'Encaminhada', em_andamento: 'Em Andamento', concluida: 'Concluída' };
+            return l[s] || s;
+        }
+        
+        function getMotivoLabel(m) {
+            const l = { reuniao: 'Reunião', capacitacao: 'Capacitação', obra: 'Obra', visita: 'Visita técnica', emergencia: 'Emergência', outro: 'Outro' };
+            return l[m] || m;
+        }
+        
+        function atualizarBadges() {
+            document.getElementById('badgeMinhas').textContent = solicitacoes.filter(s => s.solicitante === currentUser.nome).length;
+            document.getElementById('badgeAprovacoes').textContent = solicitacoes.filter(s => s.status === 'solicitada').length;
+            document.getElementById('badgeProgramacoes').textContent = solicitacoes.filter(s => s.status === 'aprovada').length;
+            document.getElementById('badgeViagens').textContent = solicitacoes.filter(s => s.status === 'encaminhada' && s.motoristaId === 'm1').length;
+            document.getElementById('badgeMotoristas').textContent = motoristas.length;
+            document.getElementById('badgeAprovadores').textContent = aprovadores.length;
+            document.getElementById('badgeSolicitantes').textContent = solicitantes.length;
+            document.getElementById('badgePassageiros').textContent = passageiros.length;
+        }
+        
+        function atualizarSelects() {
+            const sel = document.getElementById('passageiroSelect');
+            sel.innerHTML = '<option value="">Selecione...</option>';
+            passageiros.forEach(p => {
+                sel.innerHTML += `<option value="${p.id}">${p.nome}</option>`;
+            });
+        }
+        
+        function preencherPassageiro() {
+            const id = document.getElementById('passageiroSelect').value;
+            const p = passageiros.find(p => p.id === id);
+            if (p) {
+                document.getElementById('cpfPassageiro').value = p.cpf;
+                document.getElementById('emailPassageiro').value = p.email;
+                document.getElementById('telefonePassageiro').value = p.telefone;
+                document.getElementById('centroCusto').value = p.centroCusto;
+            }
+        }
+        
+        // ==================== SOLICITANTE ====================
+        function calcularRota() {
+            const origem = document.getElementById('enderecoOrigem').value;
+            const destino = document.getElementById('enderecoDestino').value;
+            if (origem && destino) {
+                const km = Math.floor(Math.random() * 200) + 5;
+                const tempo = Math.floor(km * 1.5) + 20;
+                const valor = (km * 2.5) + (tempo * 0.5);
+                
+                document.getElementById('rotaCalculada').style.display = 'block';
+                document.getElementById('rotaOrigem').textContent = origem.substring(0, 25);
+                document.getElementById('rotaDestino').textContent = destino.substring(0, 25);
+                document.getElementById('rotaKm').textContent = km + ' km';
+                document.getElementById('rotaTempo').textContent = tempo + ' min';
+                document.getElementById('rotaValor').textContent = 'R$ ' + valor.toFixed(2);
+                
+                const rd = document.getElementById('rotaCalculada').dataset;
+                rd.km = km; rd.tempo = tempo; rd.valor = valor;
+            }
+        }
+        
+        function atualizarMotorRegras() {
+            const motivo = document.getElementById('motivo').value;
+            const perfil = document.getElementById('perfil').value;
+            if (!motivo) { document.getElementById('painelMotorRegras').style.display = 'none'; return; }
+            
+            document.getElementById('painelMotorRegras').style.display = 'block';
+            let regraAtiva = null;
+            
+            if (motivo === 'emergencia') regraAtiva = 1;
+            else if (perfil === 'irrestrito') regraAtiva = 2;
+            else if (perfil === 'lider') regraAtiva = 7;
+            
+            const container = document.getElementById('regrasAplicadas');
+            container.innerHTML = '';
+            [1,2,3,4,5,6,7].forEach(num => {
+                const nomes = { 1:'Emergência', 2:'Irrestrito', 3:'Antecedência', 4:'Valor excede teto', 5:'Coletivo', 6:'Staff recorrente', 7:'Líder' };
+                const cls = num === regraAtiva ? 'active' : '';
+                container.innerHTML += `<div class="rule-item ${cls}"><div class="rule-number">${num}</div><div class="rule-info"><div class="rule-name">${nomes[num]}</div></div></div>`;
+            });
+            
+            const resultado = document.getElementById('resultadoRegra');
+            const aprovado = regraAtiva && [1,2,7].includes(regraAtiva);
+            resultado.innerHTML = `<div style="padding:12px;border-radius:6px;background:${aprovado?'#e8f5e9':'#fff3e0'}"><strong>${aprovado?'✅ APROVADO AUTOMATICAMENTE':'⚠️ REQUER APROVAÇÃO'}</strong></div>`;
+        }
+        
+        function enviarSolicitacao() {
+            const campos = ['empresaSolicitante','empresaTransporte','motivo','passageiroSelect','enderecoOrigem','enderecoDestino','dataViagem'];
+            for (const c of campos) {
+                if (!document.getElementById(c).value) { showToast('Preencha todos os campos obrigatórios!', 'error'); return; }
+            }
+            
+            const rd = document.getElementById('rotaCalculada').dataset;
+            if (!rd.km) { showToast('Calcule a rota primeiro!', 'error'); return; }
+            
+            const motivo = document.getElementById('motivo').value;
+            const perfil = document.getElementById('perfil').value;
+            let status = 'solicitada', regraAplicada = 0, quemAssina = 'Líder direto';
+            
+            if (motivo === 'emergencia') { status = 'aprovada'; regraAplicada = 1; quemAssina = 'Sem aprovação'; }
+            else if (perfil === 'irrestrito') { status = 'aprovada'; regraAplicada = 2; quemAssina = 'Sem aprovação'; }
+            else if (perfil === 'lider') { status = 'aprovada'; regraAplicada = 7; quemAssina = 'Sem aprovação'; }
+            
+            const pid = document.getElementById('passageiroSelect').value;
+            const passageiro = passageiros.find(p => p.id === pid);
+            const agora = new Date();
+            const dataHora = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+            
+            const s = {
+                protocolo: String(proximoProtocolo++),
+                empresaSolicitante: document.getElementById('empresaSolicitante').value,
+                empresaTransporte: document.getElementById('empresaTransporte').value,
+                solicitante: currentUser.nome,
+                passageiro,
+                enderecoOrigem: document.getElementById('enderecoOrigem').value,
+                enderecoDestino: document.getElementById('enderecoDestino').value,
+                dataViagem: document.getElementById('dataViagem').value,
+                horarioViagem: document.getElementById('horarioViagem').value,
+                km: parseFloat(rd.km), tempoEstimado: parseInt(rd.tempo), valorEstimado: parseFloat(rd.valor),
+                motivo, status, regraAplicada, quemAssina,
+                motorista: null, motoristaId: null,
+                kmInicial: null, kmEmbarque: null, kmDesembarque: null,
+                dataCriacao: dataHora,
+                timeline: [{ tipo: 'created', titulo: 'Solicitação criada', descricao: 'Protocolo ' + (proximoProtocolo-1) + ' gerado', data: dataHora }]
+            };
+            
+            if (status === 'aprovada') {
+                s.aprovador = 'Sistema Automático';
+                s.dataAprovacao = dataHora;
+                s.timeline.push({ tipo: 'approved', titulo: 'Aprovado automaticamente', descricao: 'Regra ' + regraAplicada, data: dataHora });
+            } else {
+                s.timeline.push({ tipo: 'pending', titulo: 'Aguardando aprovação', descricao: 'Regra padrão - Líder direto', data: dataHora });
+            }
+            
+            solicitacoes.push(s);
+            salvarDados();
+            showToast('Solicitação ' + s.protocolo + ' criada!', 'success');
+            limparFormulario();
+            showPage('dashboard');
+            atualizarDashboard();
+            atualizarBadges();
+        }
+        
+        function limparFormulario() {
+            document.getElementById('formSolicitacao').reset();
+            document.getElementById('rotaCalculada').style.display = 'none';
+            document.getElementById('painelMotorRegras').style.display = 'none';
+            ['cpfPassageiro','emailPassageiro','telefonePassageiro','centroCusto'].forEach(id => document.getElementById(id).value = '');
+        }
+        
+        function atualizarMinhasSolicitacoes() {
+            const tbody = document.getElementById('minhasSolicitacoesBody');
+            tbody.innerHTML = '';
+            [...solicitacoes].filter(s => s.solicitante === currentUser.nome).reverse().forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0,25)+'...' : '-'}</td>
+                    <td>R$ ${s.valorEstimado ? s.valorEstimado.toFixed(2) : '0,00'}</td>
+                    <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                    <td>${s.dataCriacao}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="verDetalhes('${s.protocolo}')">Ver</button>
+                        <button class="btn btn-sm btn-outline" onclick="verTimeline('${s.protocolo}')">Histórico</button>
+                    </td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma solicitação</td></tr>';
+        }
+        
+        // ==================== APROVADOR ====================
+        function atualizarAprovacoes() {
+            const tbody = document.getElementById('aprovacoesBody');
+            tbody.innerHTML = '';
+            solicitacoes.filter(s => s.status === 'solicitada').forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.solicitante}</td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0,25)+'...' : '-'}</td>
+                    <td>R$ ${s.valorEstimado.toFixed(2)}</td>
+                    <td>${getMotivoLabel(s.motivo)}</td>
+                    <td><button class="btn btn-sm btn-success" onclick="abrirModalAprovar('${s.protocolo}')">Analisar</button></td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma aprovação pendente</td></tr>';
+        }
+        
+        function atualizarHistoricoAprovacoes() {
+            const tbody = document.getElementById('historicoAprovacoesBody');
+            tbody.innerHTML = '';
+            [...solicitacoes].filter(s => s.aprovador).reverse().forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.solicitante}</td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0,25)+'...' : '-'}</td>
+                    <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                    <td>${s.dataAprovacao || '-'}</td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum histórico</td></tr>';
+        }
+        
+        function abrirModalAprovar(protocolo) {
+            protocoloAtual = protocolo;
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            document.getElementById('modalAprovarInfo').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item"><div class="detail-label">Protocolo</div><div class="detail-value">${s.protocolo}</div></div>
+                    <div class="detail-item"><div class="detail-label">Solicitante</div><div class="detail-value">${s.solicitante}</div></div>
+                    <div class="detail-item"><div class="detail-label">Passageiro</div><div class="detail-value">${s.passageiro.nome}</div></div>
+                    <div class="detail-item"><div class="detail-label">Valor</div><div class="detail-value highlight">R$ ${s.valorEstimado.toFixed(2)}</div></div>
+                </div>
+                <div class="route-info" style="margin-top:12px;">
+                    <div class="route-point"><div class="label">Origem</div><div class="address">${s.enderecoOrigem}</div></div>
+                    <div class="route-arrow">➡️</div>
+                    <div class="route-point"><div class="label">Destino</div><div class="address">${s.enderecoDestino}</div></div>
+                </div>`;
+            openModal('modalAprovar');
+        }
+        
+        function aprovarSolicitacao() {
+            const s = solicitacoes.find(s => s.protocolo === protocoloAtual);
+            if (s) {
+                const agora = new Date();
+                const dt = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                s.status = 'aprovada'; s.aprovador = currentUser.nome; s.dataAprovacao = dt;
+                s.timeline.push({ tipo: 'approved', titulo: 'Aprovado por ' + currentUser.nome, descricao: document.getElementById('aprovacaoObservacao').value || 'Aprovado', data: dt });
+                salvarDados(); closeModal('modalAprovar'); showToast('Aprovado!', 'success');
+                atualizarAprovacoes(); atualizarDashboard(); atualizarBadges();
+            }
+        }
+        
+        function recusarSolicitacao() {
+            const obs = document.getElementById('aprovacaoObservacao').value;
+            if (!obs) { showToast('Adicione um motivo!', 'error'); return; }
+            const s = solicitacoes.find(s => s.protocolo === protocoloAtual);
+            if (s) {
+                const agora = new Date();
+                const dt = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                s.status = 'recusada'; s.aprovador = currentUser.nome; s.dataAprovacao = dt;
+                s.timeline.push({ tipo: 'rejected', titulo: 'Recusado por ' + currentUser.nome, descricao: obs, data: dt });
+                salvarDados(); closeModal('modalAprovar'); showToast('Recusado.', 'info');
+                atualizarAprovacoes(); atualizarDashboard(); atualizarBadges();
+            }
+        }
+        
+        // ==================== PROGRAMADOR ====================
+        function atualizarProgramacoes() {
+            const tbody = document.getElementById('programacoesBody');
+            tbody.innerHTML = '';
+            solicitacoes.filter(s => s.status === 'aprovada').forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.passageiro.nome}</td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0,25)+'...' : '-'}</td>
+                    <td>${formatDate(s.dataViagem)} ${s.horarioViagem||''}</td>
+                    <td>R$ ${s.valorEstimado.toFixed(2)}</td>
+                    <td><button class="btn btn-sm btn-success" onclick="abrirModalProgramar('${s.protocolo}')">Programar</button></td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma programação pendente</td></tr>';
+        }
+        
+        function atualizarEncaminhadas() {
+            const tbody = document.getElementById('encaminhadasBody');
+            tbody.innerHTML = '';
+            solicitacoes.filter(s => ['encaminhada','em_andamento','concluida'].includes(s.status)).forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.passageiro.nome}</td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0,25)+'...' : '-'}</td>
+                    <td>${formatDate(s.dataViagem)}</td>
+                    <td>${s.motorista||'-'}</td>
+                    <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma viagem</td></tr>';
+        }
+        
+        function atualizarHistoricoProgramacoes() {
+            const tbody = document.getElementById('historicoProgramacoesBody');
+            tbody.innerHTML = '';
+            [...solicitacoes].filter(s => s.programador).reverse().forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.passageiro.nome}</td>
+                    <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                    <td>${s.dataProgramacao||'-'}</td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhum histórico</td></tr>';
+        }
+        
+        function abrirModalProgramar(protocolo) {
+            protocoloAtual = protocolo;
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            
+            document.getElementById('modalProgramarInfo').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item"><div class="detail-label">Protocolo</div><div class="detail-value">${s.protocolo}</div></div>
+                    <div class="detail-item"><div class="detail-label">Passageiro</div><div class="detail-value">${s.passageiro.nome}</div></div>
+                    <div class="detail-item"><div class="detail-label">Data/Hora</div><div class="detail-value">${formatDate(s.dataViagem)} ${s.horarioViagem||''}</div></div>
+                    <div class="detail-item"><div class="detail-label">Valor</div><div class="detail-value highlight">R$ ${s.valorEstimado.toFixed(2)}</div></div>
+                </div>`;
+            
+            const sel = document.getElementById('motoristaSelect');
+            sel.innerHTML = '<option value="">Selecione...</option>';
+            motoristas.filter(m => m.empresa === s.empresaTransporte).forEach(m => {
+                sel.innerHTML += `<option value="${m.id}">${m.nome} - ${m.empresa}</option>`;
+            });
+            
+            document.querySelectorAll('.tab').forEach((t,i) => { t.classList.toggle('active', i===0); });
+            document.querySelectorAll('.tab-content').forEach((t,i) => { t.style.display = i===0 ? 'block' : 'none'; });
+            document.getElementById('novoHorario').value = '';
+            document.getElementById('motivoAlteracao').value = '';
+            document.getElementById('motivoRecusa').value = '';
+            
+            openModal('modalProgramar');
+        }
+        
+        function programarViagem(acao) {
+            const s = solicitacoes.find(s => s.protocolo === protocoloAtual);
+            if (!s) return;
+            const agora = new Date();
+            const dt = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+            
+            if (acao === 'recusar') {
+                const motivo = document.getElementById('motivoRecusa').value;
+                if (!motivo) { showToast('Informe o motivo!', 'error'); return; }
+                s.status = 'recusada'; s.programador = currentUser.nome; s.dataProgramacao = dt;
+                s.timeline.push({ tipo: 'rejected', titulo: 'Programação recusada', descricao: motivo, data: dt });
+            }
+            else if (acao === 'indicar_horario') {
+                const novo = document.getElementById('novoHorario').value;
+                if (!novo) { showToast('Informe o horário!', 'error'); return; }
+                s.status = 'indicado_horario'; s.programador = currentUser.nome; s.dataProgramacao = dt;
+                s.novoHorarioIndicado = novo;
+                s.timeline.push({ tipo: 'pending', titulo: 'Horário indicado', descricao: 'Novo: ' + novo + ' - ' + (document.getElementById('motivoAlteracao').value||''), data: dt });
+            }
+            else if (acao === 'aceitar') {
+                const mid = document.getElementById('motoristaSelect').value;
+                if (!mid) { showToast('Selecione um motorista!', 'error'); return; }
+                const m = motoristas.find(m => m.id === mid);
+                s.status = 'encaminhada'; s.programador = currentUser.nome; s.dataProgramacao = dt;
+                s.motorista = m.nome; s.motoristaId = mid; s.empresaTransporte = m.empresa;
+                s.timeline.push({ tipo: 'approved', titulo: 'Programação aceita', descricao: 'Aceito por ' + currentUser.nome, data: dt });
+                s.timeline.push({ tipo: 'driver', titulo: 'Encaminhado', descricao: m.nome, data: dt });
+            }
+            
+            salvarDados(); closeModal('modalProgramar'); showToast('Atualizado!', 'success');
+            atualizarProgramacoes(); atualizarDashboard(); atualizarBadges();
+        }
+        
+        // ==================== MOTORISTA APP ====================
+        function renderAppMotorista() {
+            const viagem = solicitacoes.find(s => s.motoristaId === 'm1' && s.status === 'encaminhada');
+            const container = document.getElementById('appMotoristaContent');
+            
+            if (!viagem) {
+                const emAndamento = solicitacoes.find(s => s.motoristaId === 'm1' && s.status === 'em_andamento');
+                if (emAndamento) {
+                    container.innerHTML = renderAppEmAndamento(emAndamento);
+                } else {
+                    container.innerHTML = '<div class="mobile-frame"><div class="mobile-screen"><div class="mobile-header"><h4>🚗 Meu App</h4><p>Motorista</p></div><div class="mobile-body"><div class="mobile-status">Nenhuma viagem disponível no momento</div></div></div></div>';
+                }
+            } else {
+                container.innerHTML = renderAppDisponivel(viagem);
+            }
+        }
+        
+        function renderAppDisponivel(v) {
+            return `
+                <div class="mobile-frame">
+                    <div class="mobile-screen">
+                        <div class="mobile-header">
+                            <h4>🚗 Meu App</h4>
+                            <p>Nova Viagem Disponível</p>
+                        </div>
+                        <div class="mobile-body">
+                            <div class="mobile-trip-info">
+                                <h5>PROTOCOLO ${v.protocolo}</h5>
+                                <p>${v.passageiro.nome}</p>
+                            </div>
+                            <div class="mobile-card">
+                                <h5>📍 Rota</h5>
+                                <div class="mobile-info"><span class="label">Origem</span><span class="value">${v.enderecoOrigem.substring(0,25)}...</span></div>
+                                <div class="mobile-info"><span class="label">Destino</span><span class="value">${v.enderecoDestino.substring(0,25)}...</span></div>
+                                <div class="mobile-info"><span class="label">Distância</span><span class="value">${v.km} km</span></div>
+                            </div>
+                            <div class="mobile-card">
+                                <h5>👤 Passageiro</h5>
+                                <div class="mobile-info"><span class="label">Nome</span><span class="value">${v.passageiro.nome}</span></div>
+                                <div class="mobile-info"><span class="label">Telefone</span><span class="value">${v.passageiro.telefone}</span></div>
+                            </div>
+                            <div class="mobile-card">
+                                <h5>💰 Valor</h5>
+                                <div class="mobile-info"><span class="label">Estimado</span><span class="value">R$ ${v.valorEstimado.toFixed(2)}</span></div>
+                            </div>
+                            <button class="mobile-btn mobile-btn-success" onclick="aceitarViagemApp('${v.protocolo}')">✅ Aceitar Viagem</button>
+                            <button class="mobile-btn mobile-btn-danger" onclick="recusarViagemApp('${v.protocolo}')" style="margin-top:5px;">❌ Recusar</button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        
+        function renderAppEmAndamento(v) {
+            return `
+                <div class="mobile-frame">
+                    <div class="mobile-screen">
+                        <div class="mobile-header" style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);">
+                            <h4>🚗 Viagem em Andamento</h4>
+                            <p>Protocolo ${v.protocolo}</p>
+                        </div>
+                        <div class="mobile-body">
+                            <div class="mobile-trip-info" style="background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);">
+                                <h5>DESTINO</h5>
+                                <p>${v.enderecoDestino}</p>
+                            </div>
+                            <div class="mobile-card">
+                                <h5>📊 KM Registrados</h5>
+                                <div class="mobile-info"><span class="label">KM Inicial</span><span class="value">${v.kmInicial || '-'}</span></div>
+                                <div class="mobile-info"><span class="label">KM Embarque</span><span class="value">${v.kmEmbarque || 'Aguardando...'}</span></div>
+                                <div class="mobile-info"><span class="label">KM Desembarque</span><span class="value">${v.kmDesembarque || 'Aguardando...'}</span></div>
+                            </div>
+                            ${!v.kmEmbarque ? `
+                                <div class="mobile-card">
+                                    <h5>📍 Registrar Embarque</h5>
+                                    <input type="number" class="mobile-input" id="appKmEmbarque" placeholder="KM na coleta">
+                                    <button class="mobile-btn mobile-btn-primary" onclick="registrarEmbarque('${v.protocolo}')">Registrar Embarque</button>
+                                </div>
+                            ` : ''}
+                            ${v.kmEmbarque && !v.kmDesembarque ? `
+                                <div class="mobile-card">
+                                    <h5>🏁 Registrar Desembarque</h5>
+                                    <input type="number" class="mobile-input" id="appKmDesembarque" placeholder="KM na entrega">
+                                    <button class="mobile-btn mobile-btn-success" onclick="registrarDesembarque('${v.protocolo}')">✅ Concluir Viagem</button>
+                                </div>
+                            ` : ''}
+                            ${v.kmDesembarque ? `
+                                <div class="mobile-card">
+                                    <h5>✅ Viagem Concluída!</h5>
+                                    <div class="mobile-info"><span class="label">KM Total</span><span class="value">${v.kmDesembarque - v.kmInicial} km</span></div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>`;
+        }
+        
+        function aceitarViagemApp(protocolo) {
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (s) {
+                const agora = new Date();
+                const dt = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                s.status = 'em_andamento';
+                s.kmInicial = Math.floor(Math.random() * 50000) + 10000;
+                s.timeline.push({ tipo: 'driver', titulo: 'Motorista aceitou', descricao: currentUser.nome, data: dt });
+                s.timeline.push({ tipo: 'driver', titulo: 'Em andamento', descricao: 'KM Inicial: ' + s.kmInicial, data: dt });
+                salvarDados();
+                showToast('Viagem aceita! Vá até o passageiro.', 'success');
+                renderAppMotorista();
+                atualizarDashboard();
+            }
+        }
+        
+        function recusarViagemApp(protocolo) {
+            showToast('Viagem recusada.', 'info');
+            renderAppMotorista();
+        }
+        
+        function registrarEmbarque(protocolo) {
+            const km = document.getElementById('appKmEmbarque').value;
+            if (!km) { showToast('Informe o KM!', 'error'); return; }
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (s) {
+                const agora = new Date();
+                const dt = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                s.kmEmbarque = parseFloat(km);
+                s.timeline.push({ tipo: 'driver', titulo: 'Embarque registrado', descricao: 'KM Embarque: ' + km, data: dt });
+                salvarDados();
+                showToast('Embarque registrado!', 'success');
+                renderAppMotorista();
+            }
+        }
+        
+        function registrarDesembarque(protocolo) {
+            const km = document.getElementById('appKmDesembarque').value;
+            if (!km) { showToast('Informe o KM!', 'error'); return; }
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (s) {
+                const agora = new Date();
+                const dt = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+                s.status = 'concluida';
+                s.kmDesembarque = parseFloat(km);
+                s.kmReal = s.kmDesembarque - s.kmInicial;
+                s.dataConclusao = dt;
+                s.timeline.push({ tipo: 'completed', titulo: 'Viagem concluída', descricao: 'KM Total: ' + s.kmReal + ' km', data: dt });
+                salvarDados();
+                showToast('Viagem concluída com sucesso!', 'success');
+                renderAppMotorista();
+                atualizarDashboard();
+            }
+        }
+        
+        function atualizarMinhasViagens() {
+            const tbody = document.getElementById('minhasViagensBody');
+            tbody.innerHTML = '';
+            solicitacoes.filter(s => s.motoristaId === 'm1' && ['em_andamento','concluida'].includes(s.status)).forEach(s => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${s.protocolo}</strong></td>
+                    <td>${s.passageiro.nome}</td>
+                    <td>${s.enderecoDestino ? s.enderecoDestino.substring(0,25)+'...' : '-'}</td>
+                    <td><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></td>
+                    <td><button class="btn btn-sm btn-outline" onclick="verDetalhes('${s.protocolo}')">Detalhes</button></td>
+                </tr>`;
+            });
+            if (!tbody.innerHTML) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma viagem</td></tr>';
+        }
+        
+        // ==================== ADMIN - CADASTROS ====================
+        function cadastrarMotorista() {
+            const nome = document.getElementById('motoristaNome').value;
+            const cpf = document.getElementById('motoristaCpf').value;
+            const cnh = document.getElementById('motoristaCnh').value;
+            const tel = document.getElementById('motoristaTelefone').value;
+            const email = document.getElementById('motoristaEmail').value;
+            const empresa = document.getElementById('motoristaEmpresa').value;
+            
+            if (!nome || !cpf || !cnh || !tel || !empresa) { showToast('Preencha os campos obrigatórios!', 'error'); return; }
+            
+            motoristas.push({ id: 'm' + Date.now(), nome, cpf, cnh, telefone: tel, email, empresa });
+            salvarDados();
+            document.getElementById('formMotorista').reset();
+            showToast('Motorista cadastrado!', 'success');
+            listarMotoristas();
+            atualizarBadges();
+        }
+        
+        function listarMotoristas() {
+            const container = document.getElementById('listaMotoristas');
+            if (!container) return;
+            container.innerHTML = '';
+            motoristas.forEach(m => {
+                container.innerHTML += `<div class="user-card">
+                    <div class="user-avatar motorista">🚗</div>
+                    <div class="user-info">
+                        <div class="user-name">${m.nome}</div>
+                        <div class="user-detail">${m.empresa} | CNH: ${m.cnh}</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-sm btn-danger" onclick="excluirMotorista('${m.id}')">Excluir</button>
+                    </div>
+                </div>`;
+            });
+            if (!motoristas.length) container.innerHTML = '<div class="empty-state">Nenhum motorista cadastrado</div>';
+        }
+        
+        function excluirMotorista(id) {
+            if (confirm('Excluir este motorista?')) {
+                motoristas = motoristas.filter(m => m.id !== id);
+                salvarDados(); listarMotoristas(); atualizarBadges();
+                showToast('Motorista excluído.', 'info');
+            }
+        }
+        
+        function cadastrarAprovador() {
+            const nome = document.getElementById('aprovadorNome').value;
+            const email = document.getElementById('aprovadorEmail').value;
+            const cargo = document.getElementById('aprovadorCargo').value;
+            const tel = document.getElementById('aprovadorTelefone').value;
+            
+            if (!nome || !email || !cargo) { showToast('Preencha os campos obrigatórios!', 'error'); return; }
+            
+            aprovadores.push({ id: 'a' + Date.now(), nome, email, cargo, telefone: tel });
+            salvarDados();
+            document.getElementById('formAprovador').reset();
+            showToast('Aprovador cadastrado!', 'success');
+            listarAprovadores();
+            atualizarBadges();
+        }
+        
+        function listarAprovadores() {
+            const container = document.getElementById('listaAprovadores');
+            if (!container) return;
+            container.innerHTML = '';
+            aprovadores.forEach(a => {
+                container.innerHTML += `<div class="user-card">
+                    <div class="user-avatar aprovador">✅</div>
+                    <div class="user-info">
+                        <div class="user-name">${a.nome}</div>
+                        <div class="user-detail">${a.cargo} | ${a.email}</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-sm btn-danger" onclick="excluirAprovador('${a.id}')">Excluir</button>
+                    </div>
+                </div>`;
+            });
+            if (!aprovadores.length) container.innerHTML = '<div class="empty-state">Nenhum aprovador cadastrado</div>';
+        }
+        
+        function excluirAprovador(id) {
+            if (confirm('Excluir este aprovador?')) {
+                aprovadores = aprovadores.filter(a => a.id !== id);
+                salvarDados(); listarAprovadores(); atualizarBadges();
+                showToast('Aprovador excluído.', 'info');
+            }
+        }
+        
+        function cadastrarSolicitante() {
+            const nome = document.getElementById('solicitanteNome').value;
+            const email = document.getElementById('solicitanteEmail').value;
+            const depto = document.getElementById('solicitanteDepto').value;
+            const perfil = document.getElementById('solicitantePerfil').value;
+            
+            if (!nome || !email || !depto) { showToast('Preencha os campos obrigatórios!', 'error'); return; }
+            
+            solicitantes.push({ id: 's' + Date.now(), nome, email, depto, perfil });
+            salvarDados();
+            document.getElementById('formSolicitante').reset();
+            showToast('Solicitante cadastrado!', 'success');
+            listarSolicitantes();
+            atualizarBadges();
+        }
+        
+        function listarSolicitantes() {
+            const container = document.getElementById('listaSolicitantes');
+            if (!container) return;
+            container.innerHTML = '';
+            solicitantes.forEach(s => {
+                container.innerHTML += `<div class="user-card">
+                    <div class="user-avatar solicitante">👤</div>
+                    <div class="user-info">
+                        <div class="user-name">${s.nome}</div>
+                        <div class="user-detail">${s.depto} | Perfil: ${s.perfil}</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-sm btn-danger" onclick="excluirSolicitante('${s.id}')">Excluir</button>
+                    </div>
+                </div>`;
+            });
+            if (!solicitantes.length) container.innerHTML = '<div class="empty-state">Nenhum solicitante cadastrado</div>';
+        }
+        
+        function excluirSolicitante(id) {
+            if (confirm('Excluir este solicitante?')) {
+                solicitantes = solicitantes.filter(s => s.id !== id);
+                salvarDados(); listarSolicitantes(); atualizarBadges();
+                showToast('Solicitante excluído.', 'info');
+            }
+        }
+        
+        function cadastrarPassageiro() {
+            const nome = document.getElementById('passageiroNome').value;
+            const cpf = document.getElementById('passageiroCpf').value;
+            const email = document.getElementById('passageiroEmail').value;
+            const tel = document.getElementById('passageiroTelefone').value;
+            const cc = document.getElementById('passageiroCentroCusto').value;
+            const empresa = document.getElementById('passageiroEmpresa').value;
+            
+            if (!nome || !cpf || !email || !tel || !cc) { showToast('Preencha os campos obrigatórios!', 'error'); return; }
+            
+            passageiros.push({ id: 'p' + Date.now(), nome, cpf, email, telefone: tel, centroCusto: cc, empresa });
+            salvarDados();
+            document.getElementById('formPassageiro').reset();
+            showToast('Passageiro cadastrado!', 'success');
+            listarPassageiros();
+            atualizarBadges();
+            atualizarSelects();
+        }
+        
+        function listarPassageiros() {
+            const container = document.getElementById('listaPassageiros');
+            if (!container) return;
+            container.innerHTML = '';
+            passageiros.forEach(p => {
+                container.innerHTML += `<div class="user-card">
+                    <div class="user-avatar passageiro">🧑</div>
+                    <div class="user-info">
+                        <div class="user-name">${p.nome}</div>
+                        <div class="user-detail">CPF: ${p.cpf} | ${p.centroCusto}</div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="btn btn-sm btn-danger" onclick="excluirPassageiro('${p.id}')">Excluir</button>
+                    </div>
+                </div>`;
+            });
+            if (!passageiros.length) container.innerHTML = '<div class="empty-state">Nenhum passageiro cadastrado</div>';
+        }
+        
+        function excluirPassageiro(id) {
+            if (confirm('Excluir este passageiro?')) {
+                passageiros = passageiros.filter(p => p.id !== id);
+                salvarDados(); listarPassageiros(); atualizarBadges();
+                showToast('Passageiro excluído.', 'info');
+            }
+        }
+        
+        // ==================== COMUNS ====================
+        function formatDate(d) {
+            if (!d) return '-';
+            const [y,m,day] = d.split('-');
+            return day+'/'+m+'/'+y;
+        }
+        
+        function verDetalhes(protocolo) {
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (!s) return;
+            
+            let html = `<div class="detail-grid">
+                <div class="detail-item"><div class="detail-label">Protocolo</div><div class="detail-value">${s.protocolo}</div></div>
+                <div class="detail-item"><div class="detail-label">Status</div><div class="detail-value"><span class="badge ${s.status}">${getStatusLabel(s.status)}</span></div></div>
+                <div class="detail-item"><div class="detail-label">Solicitante</div><div class="detail-value">${s.solicitante}</div></div>
+                <div class="detail-item"><div class="detail-label">Empresa</div><div class="detail-value">${s.empresaSolicitante}</div></div>
+            </div>
+            <h3 style="margin:15px 0 8px;color:#555;font-size:13px;">Passageiro</h3>
+            <div class="detail-grid">
+                <div class="detail-item"><div class="detail-label">Nome</div><div class="detail-value">${s.passageiro.nome}</div></div>
+                <div class="detail-item"><div class="detail-label">CPF</div><div class="detail-value">${s.passageiro.cpf}</div></div>
+                <div class="detail-item"><div class="detail-label">E-mail</div><div class="detail-value">${s.passageiro.email}</div></div>
+                <div class="detail-item"><div class="detail-label">Telefone</div><div class="detail-value">${s.passageiro.telefone}</div></div>
+            </div>
+            <h3 style="margin:15px 0 8px;color:#555;font-size:13px;">Rota</h3>
+            <div class="route-info">
+                <div class="route-point"><div class="label">Origem</div><div class="address">${s.enderecoOrigem}</div></div>
+                <div class="route-arrow">➡️</div>
+                <div class="route-point"><div class="label">Destino</div><div class="address">${s.enderecoDestino}</div></div>
+            </div>
+            <div class="route-details">
+                <div class="route-detail"><div class="value">${s.km} km</div><div class="label">Distância</div></div>
+                <div class="route-detail"><div class="value">${s.tempoEstimado} min</div><div class="label">Tempo</div></div>
+                <div class="route-detail"><div class="value">R$ ${s.valorEstimado.toFixed(2)}</div><div class="label">Valor</div></div>
+            </div>`;
+            
+            if (s.kmInicial) {
+                html += `<div class="trip-report">
+                    <h3>📊 Relatório da Viagem</h3>
+                    <div class="report-grid">
+                        <div class="report-item"><div class="value">${s.kmInicial}</div><div class="label">KM Inicial</div></div>
+                        <div class="report-item"><div class="value">${s.kmEmbarque||'-'}</div><div class="label">KM Embarque</div></div>
+                        <div class="report-item"><div class="value">${s.kmDesembarque||'-'}</div><div class="label">KM Desembarque</div></div>
+                        <div class="report-item"><div class="value">${s.kmReal||'-'} km</div><div class="label">Total</div></div>
+                        <div class="report-item"><div class="value">${s.motorista||'-'}</div><div class="label">Motorista</div></div>
+                        <div class="report-item"><div class="value">${s.dataConclusao||'-'}</div><div class="label">Conclusão</div></div>
+                    </div>
+                </div>`;
+            }
+            
+            document.getElementById('detalhesContent').innerHTML = html;
+            openModal('modalDetalhes');
+        }
+        
+        function verTimeline(protocolo) {
+            const s = solicitacoes.find(s => s.protocolo === protocolo);
+            if (!s) return;
+            const icons = { created:'📝', pending:'⏳', approved:'✅', rejected:'❌', driver:'🚗', completed:'🏁' };
+            document.getElementById('timelineContent').innerHTML = s.timeline.map(t => `
+                <div class="timeline-item">
+                    <div class="timeline-dot ${t.tipo}">${icons[t.tipo]||'📌'}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">${t.titulo}</div>
+                        <div class="timeline-desc">${t.descricao}</div>
+                        <div class="timeline-time">${t.data}</div>
+                    </div>
+                </div>`).join('');
+            openModal('modalTimeline');
+        }
+        
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+        document.querySelectorAll('.modal-overlay').forEach(o => {
+            o.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('show'); });
+        });
+        
+        function showToast(msg, type='info') {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + type;
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+        
+        init();
+    </script>
+</body>
+</html>

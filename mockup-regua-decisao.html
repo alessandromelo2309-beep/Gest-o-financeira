@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Régua de Decisão - Motor de Regras</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        
+        .container { max-width: 900px; margin: 0 auto; }
+        
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        
+        .panel { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .panel h2 { color: #444; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; }
+        
+        .rules-list { display: grid; gap: 10px; }
+        .rule { padding: 12px; border-radius: 6px; border-left: 4px solid #ccc; background: #fafafa; }
+        .rule.active { background: #e8f5e9; border-left-color: #4caf50; }
+        .rule.reject { background: #ffebee; border-left-color: #f44336; }
+        .rule.approval { background: #fff3e0; border-left-color: #ff9800; }
+        
+        .rule-number { font-weight: bold; color: #666; margin-right: 10px; }
+        .rule-name { font-weight: 600; color: #333; }
+        .rule-condition { color: #777; font-size: 13px; margin-top: 5px; }
+        .rule-result { margin-top: 8px; font-size: 12px; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+        .rule-result.approved { background: #c8e6c9; color: #2e7d32; }
+        .rule-result.rejected { background: #ffcdd2; color: #c62828; }
+        .rule-result.pending { background: #ffe0b2; color: #e65100; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
+        
+        select, input[type="number"], input[type="time"] {
+            padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;
+        }
+        
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+        .checkbox-group input { width: 18px; height: 18px; }
+        .checkbox-group label { font-size: 14px; color: #333; }
+        
+        .btn-simulate {
+            background: #1976d2; color: #fff; border: none; padding: 12px 30px;
+            border-radius: 4px; font-size: 14px; cursor: pointer; margin-top: 20px;
+        }
+        .btn-simulate:hover { background: #1565c0; }
+        
+        .result-box { margin-top: 20px; padding: 20px; border-radius: 8px; display: none; }
+        .result-box.show { display: block; }
+        .result-box.approved { background: #e8f5e9; border: 2px solid #4caf50; }
+        .result-box.rejected { background: #ffebee; border: 2px solid #f44336; }
+        .result-box.pending { background: #fff3e0; border: 2px solid #ff9800; }
+        
+        .result-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+        .result-details { font-size: 14px; color: #555; line-height: 1.6; }
+        
+        .facts-box { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-top: 15px; }
+        .facts-box h3 { font-size: 14px; color: #1565c0; margin-bottom: 10px; }
+        .facts-list { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 13px; color: #333; }
+        .fact-item { padding: 4px 0; }
+        .fact-label { color: #666; }
+        .fact-value { font-weight: 600; }
+        .fact-value.yes { color: #2e7d32; }
+        .fact-value.no { color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Régua de Decisão</h1>
+        <p class="subtitle">Motor de Regras para Validação de Solicitações de Viagem</p>
+        
+        <!-- Regras -->
+        <div class="panel">
+            <h2>📋 Regras Configuradas</h2>
+            <div class="rules-list">
+                <div class="rule" id="rule1">
+                    <span class="rule-number">1</span>
+                    <span class="rule-name">Emergência — não interrompe o processo</span>
+                    <div class="rule-condition">Motivo emergencial é sim → Prossegue sem aprovação</div>
+                </div>
+                <div class="rule" id="rule2">
+                    <span class="rule-number">2</span>
+                    <span class="rule-name">Perfil Irrestrito — prerrogativa VP-2</span>
+                    <div class="rule-condition">Perfil do solicitante é irrestrito → Prossegue sem aprovação</div>
+                </div>
+                <div class="rule" id="rule3">
+                    <span class="rule-number">3</span>
+                    <span class="rule-name">Antecedência inferior ao mínimo definido</span>
+                    <div class="rule-condition">Antecedência abaixo do mínimo é sim → Recusa a solicitação</div>
+                </div>
+                <div class="rule" id="rule4">
+                    <span class="rule-number">4</span>
+                    <span class="rule-name">Valor excedente ao teto da categoria</span>
+                    <div class="rule-condition">Valor excede o teto da categoria é sim → Requer aprovação VP-2</div>
+                </div>
+                <div class="rule" id="rule5">
+                    <span class="rule-number">5</span>
+                    <span class="rule-name">Transporte coletivo disponível no trajeto</span>
+                    <div class="rule-condition">Trajeto inclui residência + Coletivo atende horário → Requer aprovação VP-2</div>
+                </div>
+                <div class="rule" id="rule6">
+                    <span class="rule-number">6</span>
+                    <span class="rule-name">Staff em deslocamento recorrente</span>
+                    <div class="rule-condition">Perfil staff + Deslocamento recorrente → Requer aprovação VP-3 (lote mensal)</div>
+                </div>
+                <div class="rule" id="rule7">
+                    <span class="rule-number">7</span>
+                    <span class="rule-name">Perfil Líder — autoaprovação</span>
+                    <div class="rule-condition">Perfil do solicitante é líder → Prossegue sem aprovação</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Simulação -->
+        <div class="panel">
+            <h2>🧪 Simulação</h2>
+            <form id="simulationForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Perfil do Solicitante</label>
+                        <select id="perfil">
+                            <option value="geral">Geral</option>
+                            <option value="irrestrito">Irrestrito (VP-2)</option>
+                            <option value="lider">Líder</option>
+                            <option value="staff">Staff</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Motivo</label>
+                        <select id="motivo">
+                            <option value="reuniao">Reunião</option>
+                            <option value="capacitacao">Capacitação</option>
+                            <option value="obra">Obra</option>
+                            <option value="emergencia">Emergência</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Valor Estimado (R$)</label>
+                        <input type="number" id="valor" value="120" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Teto da Categoria (R$)</label>
+                        <input type="number" id="teto" value="180" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Antecedência (minutos)</label>
+                        <input type="number" id="antecedencia" value="180" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Antecedência Mínima (minutos)</label>
+                        <input type="number" id="antecedenciaMinima" value="60" min="0">
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="residencia">
+                    <label for="residencia">Trajeto inclui residência</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="coletivo">
+                    <label for="coletivo">Coletivo atende o horário</label>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="recorrente">
+                    <label for="recorrente">Deslocamento recorrente</label>
+                </div>
+                
+                <button type="button" class="btn-simulate" onclick="simular()">Simular</button>
+            </form>
+        </div>
+        
+        <!-- Resultado -->
+        <div class="panel result-box" id="resultBox">
+            <div class="result-title" id="resultTitle"></div>
+            <div class="result-details" id="resultDetails"></div>
+            
+            <div class="facts-box">
+                <h3>📊 Fatos Apurados</h3>
+                <div class="facts-list" id="factsList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function simular() {
+            // Limpar regras ativas
+            document.querySelectorAll('.rule').forEach(r => r.className = 'rule');
+            
+            // Capturar dados
+            const perfil = document.getElementById('perfil').value;
+            const motivo = document.getElementById('motivo').value;
+            const valor = parseFloat(document.getElementById('valor').value);
+            const teto = parseFloat(document.getElementById('teto').value);
+            const antecedencia = parseInt(document.getElementById('antecedencia').value);
+            const antecedenciaMinima = parseInt(document.getElementById('antecedenciaMinima').value);
+            const residencia = document.getElementById('residencia').checked;
+            const coletivo = document.getElementById('coletivo').checked;
+            const recorrente = document.getElementById('recorrente').checked;
+            
+            // Fatos
+            const ehEmergencia = motivo === 'emergencia';
+            const ehIrrestrito = perfil === 'irrestrito';
+            const ehLider = perfil === 'lider';
+            const ehStaff = perfil === 'staff';
+            const antecedenciaAbaixoMinimo = antecedencia < antecedenciaMinima;
+            const valorExcedeTeto = valor > teto;
+            
+            // Avaliar regras em ordem de prioridade
+            let resultado = null;
+            let regraAtiva = null;
+            let quemAssina = '';
+            
+            // Regra 1: Emergência
+            if (ehEmergencia) {
+                resultado = 'aprovado';
+                regraAtiva = 'rule1';
+                quemAssina = 'Sem aprovação (ciência do solicitante)';
+            }
+            // Regra 2: Irrestrito
+            else if (ehIrrestrito) {
+                resultado = 'aprovado';
+                regraAtiva = 'rule2';
+                quemAssina = 'Sem aprovação (prerrogativa VP-2)';
+            }
+            // Regra 3: Antecedência mínima
+            else if (antecedenciaAbaixoMinimo) {
+                resultado = 'recusado';
+                regraAtiva = 'rule3';
+                quemAssina = 'Solicitação recusada';
+            }
+            // Regra 4: Teto do valor
+            else if (valorExcedeTeto) {
+                resultado = 'pendente';
+                regraAtiva = 'rule4';
+                quemAssina = 'VP-2';
+            }
+            // Regra 5: Coletivo
+            else if (residencia && coletivo) {
+                resultado = 'pendente';
+                regraAtiva = 'rule5';
+                quemAssina = 'VP-2';
+            }
+            // Regra 6: Staff recorrente
+            else if (ehStaff && recorrente) {
+                resultado = 'pendente';
+                regraAtiva = 'rule6';
+                quemAssina = 'VP-3 (lote mensal)';
+            }
+            // Regra 7: Líder
+            else if (ehLider) {
+                resultado = 'aprovado';
+                regraAtiva = 'rule7';
+                quemAssina = 'Sem aprovação (autoaprovação)';
+            }
+            // Regra padrão
+            else {
+                resultado = 'pendente';
+                regraAtiva = null;
+                quemAssina = 'Líder direto do solicitante';
+            }
+            
+            // Destacar regra ativa
+            if (regraAtiva) {
+                document.getElementById(regraAtiva).classList.add(resultado === 'aprovado' ? 'active' : resultado === 'recusado' ? 'reject' : 'approval');
+            }
+            
+            // Exibir resultado
+            const resultBox = document.getElementById('resultBox');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDetails = document.getElementById('resultDetails');
+            
+            resultBox.className = 'panel result-box show ' + resultado;
+            
+            if (resultado === 'aprovado') {
+                resultTitle.textContent = '✅ Prossegue sem aprovação';
+                resultTitle.style.color = '#2e7d32';
+            } else if (resultado === 'recusado') {
+                resultTitle.textContent = '❌ Solicitação Recusada';
+                resultTitle.style.color = '#c62828';
+            } else {
+                resultTitle.textContent = '⚠️ Requer Aprovação';
+                resultTitle.style.color = '#e65100';
+            }
+            
+            resultDetails.innerHTML = `<strong>Quem assina:</strong> ${quemAssina}`;
+            
+            // Fatos
+            const factsList = document.getElementById('factsList');
+            factsList.innerHTML = `
+                <div class="fact-item"><span class="fact-label">Perfil:</span> <span class="fact-value">${perfil}</span></div>
+                <div class="fact-item"><span class="fact-label">Motivo emergencial:</span> <span class="fact-value ${ehEmergencia ? 'yes' : 'no'}">${ehEmergencia ? 'sim' : 'não'}</span></div>
+                <div class="fact-item"><span class="fact-label">Valor excede teto:</span> <span class="fact-value ${valorExcedeTeto ? 'yes' : 'no'}">${valorExcedeTeto ? 'sim (' + valor + ' > ' + teto + ')' : 'não (' + valor + ' ≤ ' + teto + ')'}</span></div>
+                <div class="fact-item"><span class="fact-label">Antecedência mínima:</span> <span class="fact-value ${antecedenciaAbaixoMinimo ? 'yes' : 'no'}">${antecedenciaAbaixoMinimo ? 'abaixo do mínimo' : 'dentro do mínimo'}</span></div>
+                <div class="fact-item"><span class="fact-label">Trajeto inclui residência:</span> <span class="fact-value ${residencia ? 'yes' : 'no'}">${residencia ? 'sim' : 'não'}</span></div>
+                <div class="fact-item"><span class="fact-label">Coletivo atende horário:</span> <span class="fact-value ${coletivo ? 'yes' : 'no'}">${coletivo ? 'sim' : 'não'}</span></div>
+                <div class="fact-item"><span class="fact-label">Deslocamento recorrente:</span> <span class="fact-value ${recorrente ? 'yes' : 'no'}">${recorrente ? 'sim' : 'não'}</span></div>
+            `;
+        }
+        
+        // Simular ao carregar
+        window.onload = simular;
+    </script>
+</body>
+</html>
