@@ -5,7 +5,7 @@
   "scripts": {
     "start": "cd backend && node src/server.js",
     "dev": "cd backend && node --watch src/server.js",
-    "build:frontend": "cd frontend && npx react-scripts build"
+    "vercel-build": "echo 'frontend pre-built'"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.5",
