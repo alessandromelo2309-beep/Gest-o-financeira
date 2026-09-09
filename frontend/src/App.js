@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Wallet } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -85,11 +85,6 @@ function AppContent() {
   const [showNewTx, setShowNewTx] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { token } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (token) navigate('/', { replace: true });
-  }, [token, navigate]);
 
   const handleCreated = () => setRefreshKey(k => k + 1);
 

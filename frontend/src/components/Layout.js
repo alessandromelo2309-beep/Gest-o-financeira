@@ -68,7 +68,7 @@ export default function Layout({ children, onNewTransaction }) {
 
   const loadNotifications = async () => {
     try {
-      const res = await api.get('/notifications/unread');
+      const res = await api.get('/notifications/unread-count');
       setUnreadCount(res.data.count || 0);
       const notifRes = await api.get('/notifications');
       const items = (notifRes.data || []).slice(0, 5);
