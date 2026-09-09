@@ -1,7 +1,8 @@
-const { sql } = require('./db');
+const { sql, ensureInit } = require('./db');
 const { authMiddleware } = require('./auth-middleware');
 
 async function handler(req, res) {
+  await ensureInit();
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -19,8 +20,8 @@ async function handler(req, res) {
         const cm = month || new Date().toISOString().slice(5, 7);
         const cy = year || new Date().getFullYear().toString();
         const totalBalance = await sql`SELECT COALESCE(SUM(balance), 0) as t FROM accounts WHERE user_id = ${req.userId}`;
-        const income = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'income' AND strftime('%m', date) = ${cm} AND strftime('%Y', date) = ${cy}`;
-        const expenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND strftime('%m', date) = ${cm} AND strftime('%Y', date) = ${cy}`;
+        const income = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'income' AND TO_CHAR(date::date, 'MM') = ${cm} AND TO_CHAR(date::date, 'YYYY') = ${cy}`;
+        const expenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND TO_CHAR(date::date, 'MM') = ${cm} AND TO_CHAR(date::date, 'YYYY') = ${cy}`;
         const accounts = await sql`SELECT COUNT(*) as c FROM accounts WHERE user_id = ${req.userId}`;
         const cards = await sql`SELECT COUNT(*) as c FROM credit_cards WHERE user_id = ${req.userId}`;
         const goals = await sql`SELECT COUNT(*) as c FROM goals WHERE user_id = ${req.userId} AND status = 'active'`;
@@ -43,7 +44,7 @@ async function handler(req, res) {
         const categories = await sql`
           SELECT c.name, c.icon, c.color, COALESCE(SUM(t.amount), 0) as total
           FROM categories c LEFT JOIN transactions t ON t.category_id = c.id
-          AND strftime('%m', t.date) = ${cm} AND strftime('%Y', t.date) = ${cy}
+          AND TO_CHAR(t.date::date, 'MM') = ${cm} AND TO_CHAR(t.date::date, 'YYYY') = ${cy}
           WHERE c.user_id = ${req.userId} AND c.type = ${type}
           GROUP BY c.id ORDER BY total DESC
         `;
@@ -69,8 +70,8 @@ async function handler(req, res) {
           d.setMonth(d.getMonth() - i);
           const cm = (d.getMonth() + 1).toString().padStart(2, '0');
           const cy = d.getFullYear().toString();
-          const income = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'income' AND strftime('%m', date) = ${cm} AND strftime('%Y', date) = ${cy}`;
-          const expenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND strftime('%m', date) = ${cm} AND strftime('%Y', date) = ${cy}`;
+          const income = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'income' AND TO_CHAR(date::date, 'MM') = ${cm} AND TO_CHAR(date::date, 'YYYY') = ${cy}`;
+          const expenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND TO_CHAR(date::date, 'MM') = ${cm} AND TO_CHAR(date::date, 'YYYY') = ${cy}`;
           data.push({ month: `${cm}/${cy.slice(2)}`, income: income[0].t, expenses: expenses[0].t });
         }
         return res.json(data);
@@ -83,9 +84,9 @@ async function handler(req, res) {
         const pm = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(5, 7);
         const py = new Date(new Date().setMonth(new Date().getMonth() - 1)).getFullYear().toString();
 
-        const currIncome = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'income' AND strftime('%m', date) = ${cm} AND strftime('%Y', date) = ${cy}`;
-        const currExpenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND strftime('%m', date) = ${cm} AND strftime('%Y', date) = ${cy}`;
-        const prevExpenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND strftime('%m', date) = ${pm} AND strftime('%Y', date) = ${py}`;
+        const currIncome = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'income' AND TO_CHAR(date::date, 'MM') = ${cm} AND TO_CHAR(date::date, 'YYYY') = ${cy}`;
+        const currExpenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND TO_CHAR(date::date, 'MM') = ${cm} AND TO_CHAR(date::date, 'YYYY') = ${cy}`;
+        const prevExpenses = await sql`SELECT COALESCE(SUM(amount), 0) as t FROM transactions WHERE user_id = ${req.userId} AND type = 'expense' AND TO_CHAR(date::date, 'MM') = ${pm} AND TO_CHAR(date::date, 'YYYY') = ${py}`;
 
         const income = currIncome[0].t;
         const expenses = currExpenses[0].t;

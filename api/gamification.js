@@ -1,4 +1,4 @@
-const { sql } = require('./db');
+const { sql, ensureInit } = require('./db');
 const { authMiddleware } = require('./auth-middleware');
 
 const ACHIEVEMENTS = {
@@ -20,6 +20,7 @@ const ACHIEVEMENTS = {
 };
 
 async function handler(req, res) {
+  await ensureInit();
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

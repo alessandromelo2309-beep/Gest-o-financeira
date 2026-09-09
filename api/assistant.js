@@ -1,4 +1,4 @@
-const { sql } = require('./db');
+const { sql, ensureInit } = require('./db');
 const { authMiddleware } = require('./auth-middleware');
 
 const conversations = new Map();
@@ -470,6 +470,7 @@ function buildContextualResponse(message, history, data) {
 }
 
 async function handler(req, res) {
+  await ensureInit();
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

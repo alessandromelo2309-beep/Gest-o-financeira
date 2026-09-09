@@ -2,6 +2,15 @@ const { neon } = require('@neondatabase/serverless');
 
 const sql = neon(process.env.DATABASE_URL);
 
+let dbInitialized = false;
+
+async function ensureInit() {
+  if (!dbInitialized) {
+    await initDB();
+    dbInitialized = true;
+  }
+}
+
 async function initDB() {
   await sql`
     CREATE TABLE IF NOT EXISTS users (
@@ -188,6 +197,21 @@ async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
+
+  await sql`SELECT setval('users_id_seq', (SELECT COALESCE(MAX(id), 1) FROM users))`;
+  await sql`SELECT setval('accounts_id_seq', (SELECT COALESCE(MAX(id), 1) FROM accounts))`;
+  await sql`SELECT setval('categories_id_seq', (SELECT COALESCE(MAX(id), 1) FROM categories))`;
+  await sql`SELECT setval('transactions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM transactions))`;
+  await sql`SELECT setval('budgets_id_seq', (SELECT COALESCE(MAX(id), 1) FROM budgets))`;
+  await sql`SELECT setval('credit_cards_id_seq', (SELECT COALESCE(MAX(id), 1) FROM credit_cards))`;
+  await sql`SELECT setval('goals_id_seq', (SELECT COALESCE(MAX(id), 1) FROM goals))`;
+  await sql`SELECT setval('recurring_transactions_id_seq', (SELECT COALESCE(MAX(id), 1) FROM recurring_transactions))`;
+  await sql`SELECT setval('notifications_id_seq', (SELECT COALESCE(MAX(id), 1) FROM notifications))`;
+  await sql`SELECT setval('tags_id_seq', (SELECT COALESCE(MAX(id), 1) FROM tags))`;
+  await sql`SELECT setval('achievements_id_seq', (SELECT COALESCE(MAX(id), 1) FROM achievements))`;
+  await sql`SELECT setval('streaks_id_seq', (SELECT COALESCE(MAX(id), 1) FROM streaks))`;
+  await sql`SELECT setval('dashboard_config_id_seq', (SELECT COALESCE(MAX(id), 1) FROM dashboard_config))`;
+  await sql`SELECT setval('financial_goals_id_seq', (SELECT COALESCE(MAX(id), 1) FROM financial_goals))`;
 }
 
-module.exports = { sql, initDB };
+module.exports = { sql, initDB, ensureInit };
