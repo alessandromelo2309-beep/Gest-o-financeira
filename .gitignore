@@ -1,5 +1,4 @@
 node_modules/
-frontend/build/
 backend/database.sqlite
 backend/.env
 backups/
@@ -7,3 +6,6 @@ backups/
 .env
 .DS_Store
 Thumbs.db
+
+.vercel
+.env*

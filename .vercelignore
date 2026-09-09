@@ -13,6 +13,11 @@ debug*.js
 *.bat
 *.vbs
 
+# Frontend package.json (evitar multi-service detection)
+frontend/package.json
+frontend/package-lock.json
+frontend/node_modules/
+
 # Backups
 backups/
 
