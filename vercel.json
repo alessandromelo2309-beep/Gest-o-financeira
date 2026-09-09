@@ -1,6 +1,19 @@
 {
   "installCommand": "npm install",
-  "outputDirectory": "frontend/build",
+  "builds": [
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "command": "echo done",
+        "outputDirectory": "frontend/build"
+      }
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
