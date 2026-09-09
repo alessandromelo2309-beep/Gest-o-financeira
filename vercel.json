@@ -1,7 +1,15 @@
 {
   "installCommand": "npm install",
-  "buildCommand": "echo 'frontend pre-built'",
-  "outputDirectory": "frontend/build",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "command": "echo 'frontend pre-built'",
+        "outputDirectory": "frontend/build"
+      }
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
