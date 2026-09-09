@@ -1,0 +1,17 @@
+# Backend - detectado como service separado
+backend/
+
+# Nexo - detectado como service separado
+nexo/
+
+# Arquivos de teste/debug
+test-*.js
+debug*.js
+*.test.js
+
+# Scripts auxiliares (nao necessarios na Vercel)
+*.bat
+*.vbs
+
+# Backups
+backups/
