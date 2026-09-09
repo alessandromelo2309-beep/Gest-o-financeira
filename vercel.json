@@ -1,6 +1,5 @@
 {
   "installCommand": "npm install",
-  "buildCommand": "echo done",
   "outputDirectory": "frontend/build",
   "rewrites": [
     {
