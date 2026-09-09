@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Wallet } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -34,11 +34,10 @@ function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError(''); setLoading(true);
-    try { if (isLogin) await login(email, password); else await register(name, email, password); navigate('/'); }
+    try { if (isLogin) await login(email, password); else await register(name, email, password); }
     catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
@@ -86,48 +85,49 @@ function AppContent() {
   const [showNewTx, setShowNewTx] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { token } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) navigate('/', { replace: true });
+  }, [token, navigate]);
 
   const handleCreated = () => setRefreshKey(k => k + 1);
 
   if (!token) {
     return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
     );
   }
 
   return (
-    <BrowserRouter>
-      <Layout onNewTransaction={() => setShowNewTx(true)}>
-        <Routes>
-          <Route path="/" element={<DashboardPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
-          <Route path="/lancamentos" element={<TransactionsPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
-          <Route path="/receitas" element={<TransactionsPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
-          <Route path="/despesas" element={<TransactionsPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
-          <Route path="/contas" element={<AccountsPage key={refreshKey} />} />
-          <Route path="/cartoes" element={<CreditCardsPage key={refreshKey} />} />
-          <Route path="/categorias" element={<CategoriesPage key={refreshKey} />} />
-          <Route path="/orcamentos" element={<BudgetsPage key={refreshKey} />} />
-          <Route path="/metas" element={<GoalsPage key={refreshKey} />} />
-          <Route path="/relatorios" element={<ReportsPage key={refreshKey} />} />
-          <Route path="/analises" element={<AnalyticsPage key={refreshKey} />} />
-          <Route path="/recorrentes" element={<RecurringPage key={refreshKey} />} />
-          <Route path="/importar" element={<ImportPage key={refreshKey} />} />
-          <Route path="/notificacoes" element={<NotificationsPage key={refreshKey} />} />
-          <Route path="/gamificacao" element={<GamificationPage key={refreshKey} />} />
-          <Route path="/calculadoras" element={<CalculatorsPage key={refreshKey} />} />
-          <Route path="/planejamento" element={<PlanningPage key={refreshKey} />} />
-          <Route path="/configuracoes" element={<SettingsPage key={refreshKey} />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Layout>
+    <Layout onNewTransaction={() => setShowNewTx(true)}>
+      <Routes>
+        <Route path="/" element={<DashboardPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
+        <Route path="/lancamentos" element={<TransactionsPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
+        <Route path="/receitas" element={<TransactionsPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
+        <Route path="/despesas" element={<TransactionsPage key={refreshKey} onNewTransaction={() => setShowNewTx(true)} />} />
+        <Route path="/contas" element={<AccountsPage key={refreshKey} />} />
+        <Route path="/cartoes" element={<CreditCardsPage key={refreshKey} />} />
+        <Route path="/categorias" element={<CategoriesPage key={refreshKey} />} />
+        <Route path="/orcamentos" element={<BudgetsPage key={refreshKey} />} />
+        <Route path="/metas" element={<GoalsPage key={refreshKey} />} />
+        <Route path="/relatorios" element={<ReportsPage key={refreshKey} />} />
+        <Route path="/analises" element={<AnalyticsPage key={refreshKey} />} />
+        <Route path="/recorrentes" element={<RecurringPage key={refreshKey} />} />
+        <Route path="/importar" element={<ImportPage key={refreshKey} />} />
+        <Route path="/notificacoes" element={<NotificationsPage key={refreshKey} />} />
+        <Route path="/gamificacao" element={<GamificationPage key={refreshKey} />} />
+        <Route path="/calculadoras" element={<CalculatorsPage key={refreshKey} />} />
+        <Route path="/planejamento" element={<PlanningPage key={refreshKey} />} />
+        <Route path="/configuracoes" element={<SettingsPage key={refreshKey} />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
       <NewTransactionModal isOpen={showNewTx} onClose={() => setShowNewTx(false)} onCreated={handleCreated} />
       <ChatAssistant />
-    </BrowserRouter>
+    </Layout>
   );
 }
 
@@ -135,7 +135,9 @@ export default function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppContent />
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
         <style>{`
           @keyframes spin { to { transform: rotate(360deg); } }
           * { margin: 0; padding: 0; box-sizing: border-box; }
