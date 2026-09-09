@@ -2,7 +2,7 @@
   "installCommand": "npm install",
   "builds": [
     {
-      "src": "api/*.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
     },
     {
@@ -17,7 +17,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
