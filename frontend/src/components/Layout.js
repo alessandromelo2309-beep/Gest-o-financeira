@@ -38,7 +38,7 @@ const MOBILE_NAV = [
 ];
 
 export default function Layout({ children, onNewTransaction }) {
-  const { theme, toggleTheme, autoMode, toggleAutoMode } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -247,16 +247,15 @@ export default function Layout({ children, onNewTransaction }) {
               <span>Lançamento</span>
             </button>
 
-            <button onClick={toggleAutoMode}
-              className="app-auto-btn"
+            <button onClick={() => navigate('/calculadoras')}
               style={{
-                background: autoMode ? 'rgba(59,130,246,0.1)' : 'none', border: `1px solid ${autoMode ? t.primary : t.border}`, borderRadius: '8px',
-                cursor: 'pointer', color: autoMode ? t.primary : t.textMuted, padding: '8px', display: 'flex',
+                background: 'none', border: `1px solid ${t.border}`, borderRadius: '8px',
+                cursor: 'pointer', color: t.textMuted, padding: '8px', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
                 minHeight: '40px', minWidth: '40px',
               }}
-              title={autoMode ? 'Modo automático (ativo)' : 'Ativar modo automático (segue horário do sistema)'}>
-              <span style={{ fontSize: '11px', fontWeight: '600' }}>AUTO</span>
+              title="Calculadoras">
+              <Calculator size={18} />
             </button>
 
             <button onClick={toggleTheme}

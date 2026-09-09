@@ -144,64 +144,29 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }) {
-  const [themeName, setThemeName] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'auto') {
-      const hour = new Date().getHours();
-      return (hour >= 18 || hour < 6) ? 'dark' : 'light';
-    }
-    return saved || 'light';
-  });
-  const [autoMode, setAutoMode] = useState(() => localStorage.getItem('themeAuto') === 'true');
+  const [themeName, setThemeName] = useState(() => localStorage.getItem('theme') || 'light');
 
   const theme = themes[themeName] || themes.light;
 
   useEffect(() => {
-    if (autoMode) {
-      const checkTime = () => {
-        const hour = new Date().getHours();
-        setThemeName((hour >= 18 || hour < 6) ? 'dark' : 'light');
-      };
-      checkTime();
-      const interval = setInterval(checkTime, 60000);
-      return () => clearInterval(interval);
-    }
-  }, [autoMode]);
-
-  useEffect(() => {
-    localStorage.setItem('theme', autoMode ? 'auto' : themeName);
+    localStorage.setItem('theme', themeName);
     document.documentElement.setAttribute('data-theme', themeName);
     const t = themes[themeName] || themes.light;
     document.body.style.backgroundColor = t.bg;
     document.body.style.color = t.text;
     document.body.style.transition = 'background-color 0.3s, color 0.3s';
-  }, [themeName, autoMode]);
+  }, [themeName]);
 
   const toggleTheme = React.useCallback(() => {
-    setAutoMode(false);
     setThemeName(prev => prev === 'light' ? 'dark' : 'light');
   }, []);
 
-  const toggleAutoMode = React.useCallback(() => {
-    setAutoMode(prev => {
-      const newVal = !prev;
-      localStorage.setItem('themeAuto', newVal);
-      if (newVal) {
-        const hour = new Date().getHours();
-        setThemeName((hour >= 18 || hour < 6) ? 'dark' : 'light');
-      }
-      return newVal;
-    });
-  }, []);
-
   const setTheme = React.useCallback((name) => {
-    setAutoMode(false);
-    localStorage.setItem('themeAuto', 'false');
     if (themes[name]) setThemeName(name);
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, themeName, toggleTheme, setTheme, autoMode, toggleAutoMode }}>
+    <ThemeContext.Provider value={{ theme, themeName, toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
