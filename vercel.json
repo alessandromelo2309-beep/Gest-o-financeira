@@ -1,7 +1,12 @@
 {
   "installCommand": "npm install",
+  "buildCommand": "echo 'frontend pre-built'",
   "outputDirectory": "frontend/build",
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
