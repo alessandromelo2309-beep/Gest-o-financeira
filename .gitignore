@@ -9,3 +9,6 @@ Thumbs.db
 
 .vercel
 .env*
+
+# Repositorio proprio (git aninhado) - versionado separadamente
+movimentacoes/
